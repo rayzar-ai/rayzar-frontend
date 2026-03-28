@@ -4,13 +4,14 @@
  *
  * Most signal data is fetched server-side via Next.js App Router (RSC).
  * This store holds client-side state: active filters, selected ticker,
- * and the market regime displayed in the header.
+ * the market regime displayed in the header, and the watchlist.
  *
- * Unidirectional data flow (from ARCHITECTURE.md):
- *   Server fetch → RSC props → Client Component → Zustand (UI state only)
+ * Watchlist is persisted in RDS via the backend API (Task 2.6).
+ * Per-user watchlists are deferred to the last MVP with Clerk auth.
  */
 
 import { create } from "zustand";
+import { apiClient } from "@/lib/api-client";
 import type { MarketRegime } from "@/lib/api-client";
 
 interface SignalFilters {
@@ -33,10 +34,12 @@ interface SignalsState {
   regime: MarketRegime | null;
   setRegime: (regime: MarketRegime | null) => void;
 
-  // Watchlist (ticker symbols — persisted in DB in Task 2.6, local for now)
+  // Watchlist — synced with backend (RDS via FastAPI)
   watchlist: string[];
-  addToWatchlist: (ticker: string) => void;
-  removeFromWatchlist: (ticker: string) => void;
+  watchlistLoaded: boolean;
+  fetchWatchlist: () => Promise<void>;
+  addToWatchlist: (ticker: string) => Promise<void>;
+  removeFromWatchlist: (ticker: string) => Promise<void>;
   isWatched: (ticker: string) => boolean;
 }
 
@@ -63,18 +66,36 @@ export const useSignalsStore = create<SignalsState>((set, get) => ({
   setRegime: (regime) => set({ regime }),
 
   watchlist: [],
+  watchlistLoaded: false,
 
-  addToWatchlist: (ticker) =>
-    set((state) => ({
-      watchlist: state.watchlist.includes(ticker)
-        ? state.watchlist
-        : [...state.watchlist, ticker],
-    })),
+  fetchWatchlist: async () => {
+    const res = await apiClient.getWatchlist();
+    if (res.success && res.data) {
+      set({
+        watchlist: res.data.map((item) => item.ticker),
+        watchlistLoaded: true,
+      });
+    }
+  },
 
-  removeFromWatchlist: (ticker) =>
-    set((state) => ({
-      watchlist: state.watchlist.filter((t) => t !== ticker),
-    })),
+  addToWatchlist: async (ticker: string) => {
+    const res = await apiClient.addToWatchlist(ticker);
+    if (res.success) {
+      set((state) => ({
+        watchlist: [...state.watchlist, ticker.toUpperCase()],
+      }));
+    }
+  },
 
-  isWatched: (ticker) => get().watchlist.includes(ticker),
+  removeFromWatchlist: async (ticker: string) => {
+    const res = await apiClient.removeFromWatchlist(ticker);
+    if (res.success) {
+      set((state) => ({
+        watchlist: state.watchlist.filter((t) => t !== ticker.toUpperCase()),
+      }));
+    }
+  },
+
+  isWatched: (ticker: string) =>
+    get().watchlist.includes(ticker.toUpperCase()),
 }));

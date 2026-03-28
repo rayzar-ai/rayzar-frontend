@@ -81,6 +81,13 @@ export interface MarketRegime {
   timestamp: string;
 }
 
+export interface WatchlistItem {
+  id: number;
+  ticker: string;
+  asset_class: string;
+  created_at: string;
+}
+
 export interface OhlcvBar {
   date: string;       // "YYYY-MM-DD"
   open: number;
@@ -178,6 +185,29 @@ class RayZarApiClient {
       `/api/v1/ohlcv/${encodeURIComponent(ticker.toUpperCase())}`,
       { limit },
     );
+  }
+
+  async getWatchlist(): Promise<ApiResponse<WatchlistItem[]>> {
+    return this.get<WatchlistItem[]>("/api/v1/watchlist");
+  }
+
+  async addToWatchlist(ticker: string, asset_class = "stocks"): Promise<ApiResponse<WatchlistItem>> {
+    const url = new URL(`${this.baseUrl}/api/v1/watchlist`);
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ ticker, asset_class }),
+    });
+    return res.json() as Promise<ApiResponse<WatchlistItem>>;
+  }
+
+  async removeFromWatchlist(ticker: string): Promise<ApiResponse<null>> {
+    const url = new URL(`${this.baseUrl}/api/v1/watchlist/${encodeURIComponent(ticker.toUpperCase())}`);
+    const res = await fetch(url.toString(), {
+      method: "DELETE",
+      headers: this.headers(),
+    });
+    return res.json() as Promise<ApiResponse<null>>;
   }
 }
 

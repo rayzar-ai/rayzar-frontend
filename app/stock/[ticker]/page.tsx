@@ -17,6 +17,7 @@ import { notFound } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { OhlcvChart } from "@/features/charts/components/ohlcv-chart";
 import { SignalDetailCard } from "@/features/signals/components/signal-detail-card";
+import { WatchButton } from "@/components/ui/watch-button";
 import { FINANCIAL_DISCLAIMER } from "@/config/legal";
 
 interface StockPageProps {
@@ -71,7 +72,10 @@ export default async function StockPage({ params }: StockPageProps) {
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">{upper}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white">{upper}</h1>
+            <WatchButton ticker={upper} size="md" />
+          </div>
           {signal && (
             <p className="text-sm text-gray-500 mt-1">
               Signal as of {signal.signal_date}

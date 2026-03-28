@@ -6,6 +6,7 @@ import type { Signal, PaginationMeta } from "@/lib/api-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
 import { RegimeBadge } from "@/components/ui/regime-badge";
+import { WatchButton } from "@/components/ui/watch-button";
 import { formatConfidence, formatDate } from "@/lib/utils";
 
 interface SignalsTableProps {
@@ -52,6 +53,7 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
               <th className="px-4 py-3">RayZar Score</th>
               <th className="px-4 py-3">Regime</th>
               <th className="px-4 py-3">Signal Date</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800/60">
@@ -82,6 +84,9 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
                 </td>
                 <td className="px-4 py-3 text-gray-500">
                   {formatDate(signal.signal_date)}
+                </td>
+                <td className="px-4 py-3">
+                  <WatchButton ticker={signal.ticker} />
                 </td>
               </tr>
             ))}

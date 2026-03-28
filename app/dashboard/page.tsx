@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/api-client";
 import { DashboardHeader } from "@/features/signals/components/dashboard-header";
 import { SignalFilters } from "@/features/signals/components/signal-filters";
 import { SignalsTable } from "@/features/signals/components/signals-table";
+import { WatchlistPanel } from "@/features/watchlist/components/watchlist-panel";
 import { FINANCIAL_DISCLAIMER } from "@/config/legal";
 
 interface DashboardPageProps {
@@ -67,19 +68,31 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       />
 
       <main className="mx-auto max-w-screen-xl px-4 py-6">
-        {/* Filters + refresh button */}
-        <Suspense>
-          <SignalFilters activeClass={signalClass} />
-        </Suspense>
+        <div className="flex gap-6">
+          {/* ── Main content ────────────────────────────────────────────── */}
+          <div className="min-w-0 flex-1">
+            {/* Filters + refresh button */}
+            <Suspense>
+              <SignalFilters activeClass={signalClass} />
+            </Suspense>
 
-        {/* Signals table / empty state */}
-        <Suspense>
-          <SignalsTable
-            signals={signalsData?.signals ?? []}
-            meta={meta}
-            currentPage={page}
-          />
-        </Suspense>
+            {/* Signals table / empty state */}
+            <Suspense>
+              <SignalsTable
+                signals={signalsData?.signals ?? []}
+                meta={meta}
+                currentPage={page}
+              />
+            </Suspense>
+          </div>
+
+          {/* ── Watchlist sidebar ────────────────────────────────────────── */}
+          <aside className="hidden w-56 shrink-0 lg:block">
+            <div className="sticky top-20">
+              <WatchlistPanel />
+            </div>
+          </aside>
+        </div>
 
         {/* Financial disclaimer — required on all signal pages */}
         <p className="mt-8 text-xs leading-relaxed text-gray-600">
