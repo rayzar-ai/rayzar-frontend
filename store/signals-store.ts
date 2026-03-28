@@ -11,7 +11,7 @@
  */
 
 import { create } from "zustand";
-import type { MarketRegime, Signal } from "@/lib/api-client";
+import type { MarketRegime } from "@/lib/api-client";
 
 interface SignalFilters {
   signalClass: string;   // "" = all classes
