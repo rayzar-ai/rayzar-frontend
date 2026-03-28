@@ -97,6 +97,31 @@ export interface OhlcvBar {
   volume: number;
 }
 
+export interface Fundamentals {
+  ticker: string;
+  sector: string | null;
+  industry: string | null;
+  market_cap: number | null;
+  pe_ratio: number | null;
+  pb_ratio: number | null;
+  ps_ratio: number | null;
+  eps_ttm: number | null;
+  revenue_ttm: number | null;
+  profit_margin: number | null;
+  earnings_date: string | null;   // "YYYY-MM-DD"
+  analyst_target: number | null;
+  analyst_buy: number | null;
+  analyst_hold: number | null;
+  analyst_sell: number | null;
+  short_float: number | null;
+  short_ratio: number | null;
+  week_52_high: number | null;
+  week_52_low: number | null;
+  beta: number | null;
+  dividend_yield: number | null;
+  data_date: string;
+}
+
 // ---------------------------------------------------------------------------
 // Query param types
 // ---------------------------------------------------------------------------
@@ -199,6 +224,12 @@ class RayZarApiClient {
       body: JSON.stringify({ ticker, asset_class }),
     });
     return res.json() as Promise<ApiResponse<WatchlistItem>>;
+  }
+
+  async getFundamentals(ticker: string): Promise<ApiResponse<Fundamentals | null>> {
+    return this.get<Fundamentals | null>(
+      `/api/v1/fundamentals/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
   }
 
   async removeFromWatchlist(ticker: string): Promise<ApiResponse<null>> {

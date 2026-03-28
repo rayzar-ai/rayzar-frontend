@@ -17,6 +17,7 @@ import { notFound } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { OhlcvChart } from "@/features/charts/components/ohlcv-chart";
 import { SignalDetailCard } from "@/features/signals/components/signal-detail-card";
+import { FundamentalsPanel } from "@/features/fundamentals/components/fundamentals-panel";
 import { WatchButton } from "@/components/ui/watch-button";
 import { FINANCIAL_DISCLAIMER } from "@/config/legal";
 
@@ -36,10 +37,11 @@ export default async function StockPage({ params }: StockPageProps) {
   const { ticker } = await params;
   const upper = ticker.toUpperCase();
 
-  // Fetch signal + OHLCV in parallel
-  const [signalRes, ohlcvRes] = await Promise.allSettled([
+  // Fetch signal + OHLCV + fundamentals in parallel
+  const [signalRes, ohlcvRes, fundamentalsRes] = await Promise.allSettled([
     apiClient.getSignalByTicker(upper),
     apiClient.getOhlcv(upper, 252),
+    apiClient.getFundamentals(upper),
   ]);
 
   const signal =
@@ -51,6 +53,11 @@ export default async function StockPage({ params }: StockPageProps) {
     ohlcvRes.status === "fulfilled" && ohlcvRes.value.success
       ? (ohlcvRes.value.data ?? [])
       : [];
+
+  const fundamentals =
+    fundamentalsRes.status === "fulfilled" && fundamentalsRes.value.success
+      ? fundamentalsRes.value.data
+      : null;
 
   // 404 if the ticker has never had a signal (bad URL or typo)
   if (!signal && bars.length === 0) {
@@ -109,6 +116,19 @@ export default async function StockPage({ params }: StockPageProps) {
         ) : (
           <div className="mb-6 rounded-lg border border-[#1a1a1a] bg-[#0f0f0f] p-5 text-sm text-gray-500">
             No signal found for {upper}. It may not be in the current watchlist.
+          </div>
+        )}
+
+        {/* ── Fundamentals ───────────────────────────────────────────────── */}
+        {fundamentals && (
+          <div className="mb-6">
+            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+              Fundamentals
+            </h2>
+            <FundamentalsPanel
+              data={fundamentals}
+              currentPrice={bars.length > 0 ? bars[bars.length - 1].close : undefined}
+            />
           </div>
         )}
 
