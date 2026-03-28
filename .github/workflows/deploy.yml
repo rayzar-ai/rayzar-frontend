@@ -1,0 +1,45 @@
+# =============================================================================
+# .github/workflows/deploy.yml — RayZar Frontend CI/CD
+# Type-checks and lints on every PR.
+# Vercel handles production deployment automatically on push to main
+# via the Vercel GitHub integration (no manual deploy step needed).
+# =============================================================================
+#
+# Required setup:
+#   1. Connect rayzar-frontend repo to Vercel via vercel.com dashboard
+#   2. Set in Vercel environment variables:
+#        NEXT_PUBLIC_API_URL  — EC2 backend URL (e.g. http://<ec2-ip>:8000)
+#        NEXT_PUBLIC_API_KEY  — API key matching rayzar-backend API_KEY setting
+#   3. Vercel will auto-deploy on every push to main
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Type-check and lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
