@@ -81,6 +81,15 @@ export interface MarketRegime {
   timestamp: string;
 }
 
+export interface OhlcvBar {
+  date: string;       // "YYYY-MM-DD"
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 // ---------------------------------------------------------------------------
 // Query param types
 // ---------------------------------------------------------------------------
@@ -162,6 +171,13 @@ class RayZarApiClient {
 
   async getMarketRegime(): Promise<ApiResponse<MarketRegime | null>> {
     return this.get<MarketRegime | null>("/api/v1/market/regime");
+  }
+
+  async getOhlcv(ticker: string, limit = 252): Promise<ApiResponse<OhlcvBar[]>> {
+    return this.get<OhlcvBar[]>(
+      `/api/v1/ohlcv/${encodeURIComponent(ticker.toUpperCase())}`,
+      { limit },
+    );
   }
 }
 
