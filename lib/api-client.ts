@@ -123,6 +123,95 @@ export interface Fundamentals {
 }
 
 // ---------------------------------------------------------------------------
+// TA Analysis types — new for TrendSpider-like terminal
+// ---------------------------------------------------------------------------
+
+/**
+ * A single TA signal item returned by the /ta-analysis endpoint.
+ */
+export interface TASignalItem {
+  name: string;
+  direction: "bullish" | "bearish" | "neutral";
+  confidence: number;          // 0.0 – 1.0
+  timeframe: string;           // e.g. "1d", "1w", "1m"
+  status?: string;             // e.g. "active", "forming", "completed"
+  key_levels?: Record<string, number>;  // e.g. { neckline: 150.5, target: 135.0 }
+  description?: string;        // human-readable explanation
+}
+
+/**
+ * Lightweight health-only response from GET /ta-analysis/{ticker}/health
+ */
+export interface TAHealthResponse {
+  ticker: string;
+  health_score: number | null;   // -100 to +100
+  health_grade: string | null;   // "A+", "A", "B", "C", "D", "F", "F-"
+  signal_date: string;
+}
+
+/**
+ * Full TA analysis response from GET /ta-analysis/{ticker}
+ */
+export interface TAAnalysisResponse {
+  ticker: string;
+  signal_date: string;
+  ta_direction: "bullish" | "bearish" | "neutral" | null;
+  ta_summary: string | null;
+  health_score: number | null;
+  health_grade: string | null;
+  personality_type: string | null;     // e.g. "MOMENTUM", "VALUE", "MEAN_REVERSION"
+  macro_regime_label: string | null;   // e.g. "risk-on", "risk-off", "transition"
+  sector_regime_label: string | null;  // e.g. "BULL", "BEAR", "NEUTRAL"
+  signals: TASignalItem[];
+}
+
+/**
+ * FeatureContext — structured view of Signal.features_used for TA data fallback.
+ * Parsed from the opaque features_used JSON blob on the Signal object.
+ */
+export interface FeatureContext {
+  health_score?: number | null;
+  health_grade?: string | null;
+  personality_type?: string | null;
+  macro_regime?: string | null;
+  sector_regime?: string | null;
+  ta_direction?: string | null;
+  ta_summary?: string | null;
+  pattern_1?: string | null;
+  pattern_2?: string | null;
+  pattern_3?: string | null;
+  hurst_exponent?: number | null;
+  beta?: number | null;
+  long_prob?: number | null;
+  short_prob?: number | null;
+}
+
+/**
+ * Parse the opaque features_used blob from a Signal into a typed FeatureContext.
+ * Returns null if features_used is null/unparseable.
+ */
+export function parseFeatureContext(featuresUsed: unknown): FeatureContext | null {
+  if (!featuresUsed || typeof featuresUsed !== "object") return null;
+  const f = featuresUsed as Record<string, unknown>;
+  return {
+    health_score:     typeof f.health_score === "number" ? f.health_score : null,
+    health_grade:     typeof f.health_grade === "string" ? f.health_grade : null,
+    personality_type: typeof f.personality_type === "string" ? f.personality_type : null,
+    macro_regime:     typeof f.macro_regime === "string" ? f.macro_regime : null,
+    sector_regime:    typeof f.sector_regime === "string" ? f.sector_regime : null,
+    ta_direction:     typeof f.ta_direction === "string" ? f.ta_direction : null,
+    ta_summary:       typeof f.ta_summary === "string" ? f.ta_summary : null,
+    pattern_1:        typeof f.pattern_1 === "string" ? f.pattern_1 : null,
+    pattern_2:        typeof f.pattern_2 === "string" ? f.pattern_2 : null,
+    pattern_3:        typeof f.pattern_3 === "string" ? f.pattern_3 : null,
+    hurst_exponent:   typeof f.hurst_exponent === "number" ? f.hurst_exponent : null,
+    beta:             typeof f.beta === "number" ? f.beta : null,
+    long_prob:        typeof f.long_prob === "number" ? f.long_prob : null,
+    short_prob:       typeof f.short_prob === "number" ? f.short_prob : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Query param types
 // ---------------------------------------------------------------------------
 
@@ -179,7 +268,7 @@ class RayZarApiClient {
     return res.json() as Promise<ApiResponse<T>>;
   }
 
-  // ── Endpoints ─────────────────────────────────────────────────────────
+  // ── Core Signal Endpoints ─────────────────────────────────────────────
 
   async health(): Promise<ApiResponse<HealthData>> {
     return this.get<HealthData>("/health");
@@ -239,6 +328,56 @@ class RayZarApiClient {
       headers: this.headers(),
     });
     return res.json() as Promise<ApiResponse<null>>;
+  }
+
+  // ── TA Analysis Endpoints ─────────────────────────────────────────────
+
+  /**
+   * Fetch the full TA analysis for a ticker.
+   * Returns null gracefully if the endpoint returns 404 or fails.
+   */
+  async getTAAnalysis(ticker: string): Promise<TAAnalysisResponse | null> {
+    try {
+      const res = await this.get<TAAnalysisResponse>(
+        `/api/v1/ta/${encodeURIComponent(ticker.toUpperCase())}`,
+      );
+      if (res.success && res.data) return res.data;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch just the TA signal items for a ticker.
+   * Returns empty array gracefully on failure.
+   */
+  async getTASignals(ticker: string): Promise<TASignalItem[]> {
+    try {
+      const res = await this.get<TASignalItem[]>(
+        `/api/v1/ta/${encodeURIComponent(ticker.toUpperCase())}/signals`,
+      );
+      if (res.success && res.data) return res.data;
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch just the health score and grade for a ticker.
+   * Returns null gracefully on failure.
+   */
+  async getTAHealth(ticker: string): Promise<TAHealthResponse | null> {
+    try {
+      const res = await this.get<TAHealthResponse>(
+        `/api/v1/ta/${encodeURIComponent(ticker.toUpperCase())}/health`,
+      );
+      if (res.success && res.data) return res.data;
+      return null;
+    } catch {
+      return null;
+    }
   }
 }
 

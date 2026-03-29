@@ -15,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-background antialiased">
+      <body
+        className="min-h-screen antialiased"
+        style={{ background: "#080c14", color: "#e6edf3" }}
+      >
         <Navbar />
         {children}
       </body>
