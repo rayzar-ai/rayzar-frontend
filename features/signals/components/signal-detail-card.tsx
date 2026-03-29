@@ -16,20 +16,20 @@ interface SignalDetailCardProps {
 
 function MetricRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
-      <span className="text-sm text-gray-400">{label}</span>
-      <span className="text-sm font-medium text-gray-100">{value}</span>
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+      <span className="text-sm text-text-secondary">{label}</span>
+      <span className="text-sm font-medium text-text-primary">{value}</span>
     </div>
   );
 }
 
 export function SignalDetailCard({ signal }: SignalDetailCardProps) {
   return (
-    <div className="rounded-lg border border-[#1a1a1a] bg-[#0f0f0f] p-5">
+    <div className="rounded-lg border border-border bg-card p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">{signal.ticker}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h2 className="text-2xl font-bold text-text-heading">{signal.ticker}</h2>
+          <p className="text-sm text-text-muted mt-0.5">
             {signal.asset_class} · {signal.timeframe}
           </p>
         </div>
@@ -51,9 +51,9 @@ export function SignalDetailCard({ signal }: SignalDetailCardProps) {
       </div>
 
       {signal.reasoning && (
-        <div className="mt-4 rounded-md bg-[#0a0a0a] p-3">
-          <p className="text-xs font-medium text-gray-400 mb-1">Reasoning</p>
-          <p className="text-sm text-gray-300 leading-relaxed">{signal.reasoning}</p>
+        <div className="mt-4 rounded-md bg-elevated p-3">
+          <p className="text-xs font-medium text-text-secondary mb-1">Reasoning</p>
+          <p className="text-sm text-text-primary leading-relaxed">{signal.reasoning}</p>
         </div>
       )}
     </div>

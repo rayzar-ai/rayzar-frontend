@@ -13,25 +13,25 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function signalColour(signalClass: Signal["signal_class"]): string {
   const map: Record<Signal["signal_class"], string> = {
-    STRONG_LONG:  "text-green-500",
-    LONG:         "text-green-400",
-    NEUTRAL:      "text-gray-400",
-    SHORT:        "text-red-400",
-    STRONG_SHORT: "text-red-500",
+    STRONG_LONG:  "text-signal-strong-long",
+    LONG:         "text-signal-long",
+    NEUTRAL:      "text-signal-neutral",
+    SHORT:        "text-signal-short",
+    STRONG_SHORT: "text-signal-strong-short",
   };
-  return map[signalClass] ?? "text-gray-400";
+  return map[signalClass] ?? "text-signal-neutral";
 }
 
 /** Background variant for signal badges (used on dashboard table). */
 export function signalBgColour(signalClass: Signal["signal_class"]): string {
   const map: Record<Signal["signal_class"], string> = {
-    STRONG_LONG:  "bg-green-900/40 text-green-400 border-green-800",
-    LONG:         "bg-green-900/20 text-green-300 border-green-900",
-    NEUTRAL:      "bg-gray-800/40 text-gray-400 border-gray-700",
-    SHORT:        "bg-red-900/20 text-red-300 border-red-900",
-    STRONG_SHORT: "bg-red-900/40 text-red-400 border-red-800",
+    STRONG_LONG:  "signal-bg-strong-long",
+    LONG:         "signal-bg-long",
+    NEUTRAL:      "signal-bg-neutral",
+    SHORT:        "signal-bg-short",
+    STRONG_SHORT: "signal-bg-strong-short",
   };
-  return map[signalClass] ?? "bg-gray-800 text-gray-400";
+  return map[signalClass] ?? "signal-bg-neutral";
 }
 
 /** Format a confidence float (0–1) as a percentage string e.g. "82%" */

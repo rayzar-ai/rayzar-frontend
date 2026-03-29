@@ -20,7 +20,7 @@ export function Navbar() {
     <header
       className="sticky top-0 z-50 border-b"
       style={{
-        borderColor: "#1e2433",
+        borderColor: "var(--color-border)",
         background: "rgba(8,12,20,0.96)",
         backdropFilter: "blur(12px)",
       }}
@@ -32,21 +32,21 @@ export function Navbar() {
           <div
             className="flex h-7 w-7 items-center justify-center rounded"
             style={{
-              background: "linear-gradient(135deg, #00d4aa22, #00d4aa44)",
-              border: "1px solid #00d4aa44",
+              background: "linear-gradient(135deg, var(--color-teal-dim), rgba(0,212,170,0.27))",
+              border: "1px solid var(--color-teal-glow)",
             }}
           >
-            <Zap className="h-4 w-4" style={{ color: "#00d4aa" }} />
+            <Zap className="h-4 w-4" style={{ color: "var(--color-teal)" }} />
           </div>
-          <span className="text-base font-bold tracking-tight text-white">
-            Ray<span style={{ color: "#00d4aa" }}>Zar</span>
+          <span className="text-base font-bold tracking-tight text-text-heading">
+            Ray<span style={{ color: "var(--color-teal)" }}>Zar</span>
           </span>
           <span
             className="hidden rounded px-1.5 py-0.5 text-[10px] font-semibold sm:inline"
             style={{
-              background: "#00d4aa15",
-              color: "#00d4aa",
-              border: "1px solid #00d4aa30",
+              background: "var(--color-teal-dim)",
+              color: "var(--color-teal)",
+              border: "1px solid var(--color-teal-glow)",
             }}
           >
             AI
@@ -67,12 +67,12 @@ export function Navbar() {
               className={cn(
                 "rounded px-3 py-1.5 text-sm font-medium transition-colors",
                 pathname.startsWith(link.href)
-                  ? "text-white"
-                  : "text-gray-400 hover:text-white"
+                  ? "text-text-heading"
+                  : "text-text-secondary hover:text-text-heading"
               )}
               style={
                 pathname.startsWith(link.href)
-                  ? { background: "#ffffff10", color: "#e6edf3" }
+                  ? { background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)" }
                   : {}
               }
             >
@@ -88,7 +88,7 @@ export function Navbar() {
             title="Alerts (coming soon)"
             disabled
           >
-            <Bell className="h-4 w-4 text-gray-500" />
+            <Bell className="h-4 w-4 text-text-muted" />
           </button>
 
           <button
@@ -96,15 +96,15 @@ export function Navbar() {
             title="Settings (coming soon)"
             disabled
           >
-            <Settings className="h-4 w-4 text-gray-500" />
+            <Settings className="h-4 w-4 text-text-muted" />
           </button>
 
           <div
             className="hidden rounded px-2.5 py-1 text-xs font-semibold sm:flex items-center gap-1"
             style={{
-              background: "#f59e0b15",
-              color: "#f59e0b",
-              border: "1px solid #f59e0b30",
+              background: "var(--color-amber-dim)",
+              color: "var(--color-amber)",
+              border: "1px solid rgba(245,158,11,0.3)",
             }}
           >
             <BarChart2 className="h-3 w-3" />

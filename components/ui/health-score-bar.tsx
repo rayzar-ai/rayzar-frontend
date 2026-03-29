@@ -21,11 +21,11 @@ function getGradeFromScore(score: number): string {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 60)  return "#10b981"; // green
-  if (score >= 30)  return "#00d4aa"; // teal
-  if (score >= 0)   return "#f59e0b"; // amber
-  if (score >= -30) return "#f97316"; // orange
-  return "#ef4444";                   // red
+  if (score >= 60)  return "var(--color-score-excellent)";
+  if (score >= 30)  return "var(--color-score-good)";
+  if (score >= 0)   return "var(--color-score-moderate)";
+  if (score >= -30) return "var(--color-score-weak)";
+  return "var(--color-score-poor)";
 }
 
 function getScoreLabel(score: number): string {
@@ -49,7 +49,7 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
   const displayScore = score ?? 0;
   const displayGrade = grade ?? (score !== null ? getGradeFromScore(displayScore) : "—");
   const percent = scoreToPercent(displayScore);
-  const color = score !== null ? getScoreColor(displayScore) : "#484f58";
+  const color = score !== null ? getScoreColor(displayScore) : "var(--color-score-muted)";
 
   useEffect(() => {
     // Trigger animation after mount
@@ -89,7 +89,7 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
       >
         <span
           className="h-1 w-12 overflow-hidden rounded-full"
-          style={{ background: "rgba(255,255,255,0.08)" }}
+          style={{ background: "rgba(255,255,255,0.08)" }} /* track bg */
         >
           <span
             className="block h-full rounded-full transition-all duration-700 ease-out"
@@ -136,7 +136,7 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
             <div
               className="absolute inset-y-0 left-0 h-full rounded-full"
               style={{
-                background: "linear-gradient(to right, #dc2626 0%, #ef4444 25%, #f59e0b 45%, #eab308 55%, #10b981 75%, #059669 100%)",
+                background: "linear-gradient(to right, var(--color-score-very-poor) 0%, var(--color-score-poor) 25%, var(--color-score-moderate) 45%, #eab308 55%, var(--color-score-excellent) 75%, var(--color-strong-bull) 100%)",
                 opacity: 0.2,
                 right: 0,
               }}
@@ -206,7 +206,7 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
         <div
           className="h-4 w-full overflow-hidden rounded-full"
           style={{
-            background: "linear-gradient(to right, #dc2626 0%, #ef4444 20%, #f97316 35%, #f59e0b 50%, #10b981 70%, #059669 100%)",
+            background: "linear-gradient(to right, var(--color-score-very-poor) 0%, var(--color-score-poor) 20%, var(--color-score-weak) 35%, var(--color-score-moderate) 50%, var(--color-score-excellent) 70%, var(--color-strong-bull) 100%)",
             opacity: 0.25,
           }}
         />
@@ -220,7 +220,7 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
             className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
             style={{
               width: animated ? `${percent}%` : "50%",
-              background: `linear-gradient(to right, ${displayScore < 0 ? "#dc2626" : "#f59e0b"}, ${color})`,
+              background: `linear-gradient(to right, ${displayScore < 0 ? "var(--color-score-very-poor)" : "var(--color-score-moderate)"}, ${color})`,
               boxShadow: `0 0 12px ${color}50`,
             }}
           />
@@ -246,12 +246,12 @@ export function HealthScoreBar({ score, grade, size = "md", className }: HealthS
       {/* Grade thresholds legend */}
       <div className="grid grid-cols-6 gap-1 text-center">
         {[
-          { range: "≤-50", grade: "F-", color: "#dc2626" },
-          { range: "-50→-20", grade: "F", color: "#ef4444" },
-          { range: "-20→10", grade: "D", color: "#f97316" },
-          { range: "10→40", grade: "C", color: "#f59e0b" },
-          { range: "40→70", grade: "B", color: "#00d4aa" },
-          { range: "70+", grade: "A/A+", color: "#10b981" },
+          { range: "≤-50",   grade: "F-",  color: "var(--color-score-very-poor)" },
+          { range: "-50→-20",grade: "F",   color: "var(--color-score-poor)" },
+          { range: "-20→10", grade: "D",   color: "var(--color-score-weak)" },
+          { range: "10→40",  grade: "C",   color: "var(--color-score-moderate)" },
+          { range: "40→70",  grade: "B",   color: "var(--color-score-good)" },
+          { range: "70+",    grade: "A/A+",color: "var(--color-score-excellent)" },
         ].map((t) => (
           <div
             key={t.grade}

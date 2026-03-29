@@ -211,6 +211,28 @@ export function parseFeatureContext(featuresUsed: unknown): FeatureContext | nul
   };
 }
 
+export interface EarningsQuarter {
+  ticker: string;
+  report_date: string;          // "YYYY-MM-DD"
+  eps_actual: number | null;
+  eps_estimate: number | null;
+  revenue_actual: number | null;
+  surprise_pct: number | null;
+}
+
+export interface OptionsSnapshot {
+  ticker: string;
+  date: string;                 // "YYYY-MM-DD"
+  put_call_ratio: number | null;
+  max_pain: number | null;
+  iv_rank: number | null;
+  iv_percentile: number | null;
+  call_wall: number | null;
+  put_wall: number | null;
+  gamma_wall_call: number | null;
+  gamma_wall_put: number | null;
+}
+
 // ---------------------------------------------------------------------------
 // Query param types
 // ---------------------------------------------------------------------------
@@ -378,6 +400,20 @@ class RayZarApiClient {
     } catch {
       return null;
     }
+  }
+
+  // ── Earnings & Options Endpoints ──────────────────────────────────────
+
+  async getEarnings(ticker: string): Promise<ApiResponse<EarningsQuarter[]>> {
+    return this.get<EarningsQuarter[]>(
+      `/api/v1/earnings/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
+  }
+
+  async getOptions(ticker: string): Promise<ApiResponse<OptionsSnapshot | null>> {
+    return this.get<OptionsSnapshot | null>(
+      `/api/v1/options/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
   }
 }
 

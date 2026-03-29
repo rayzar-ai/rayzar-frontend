@@ -92,7 +92,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a3447;
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
   transition: background 0.2s ease;
 }
@@ -108,7 +108,7 @@ body {
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2a3447 var(--color-panel);
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-panel);
 }
 
 /* ─── Market Signal Color Utilities ───────────────────────────────────────── */
@@ -215,7 +215,7 @@ body {
 /* Teal CTA button */
 .btn-teal {
   background-color: var(--color-teal);
-  color: #080c14;
+  color: var(--color-text-inverse);
   font-weight: 600;
   border-radius: 0.375rem;
   padding: 0.375rem 0.875rem;
@@ -226,7 +226,7 @@ body {
 }
 
 .btn-teal:hover {
-  background-color: #00bfa0;
+  background-color: #00bfa0; /* teal darken — no token yet, UX designer will refine */
   box-shadow: 0 0 12px var(--color-teal-glow);
 }
 
@@ -254,7 +254,7 @@ body {
 }
 
 .table-row-hover:hover {
-  background-color: rgba(30, 36, 51, 0.6);
+  background-color: rgba(30, 36, 51, 0.6); /* ~--color-border at 60% — UX designer refines */
 }
 
 /* ─── Focus Ring ───────────────────────────────────────────────────────────── */
@@ -272,4 +272,103 @@ body {
 /* ─── Transitions ──────────────────────────────────────────────────────────── */
 a, button {
   transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+/* ─── Extended Design Tokens ───────────────────────────────────────────────── */
+/* These are NEW variables added by the token system.                           */
+/* Existing variables above are UNCHANGED.                                      */
+:root {
+  /* Scrollbar */
+  --color-scrollbar-thumb:  #2a3447;
+
+  /* Extended text */
+  --color-text-inverse:     #080c14;  /* text on teal/accent bg */
+  --color-text-heading:     #ffffff;  /* h1-h3 headings */
+  --color-text-link:        #00d4aa;  /* clickable links */
+
+  /* Extended backgrounds */
+  --color-bg-overlay:       rgba(0, 0, 0, 0.7);  /* modal backdrop */
+  --color-bg-chart:         #0d1117;              /* chart background */
+
+  /* Signal background tints */
+  --color-signal-strong-long-bg:   rgba(5, 150, 105, 0.15);
+  --color-signal-long-bg:          rgba(16, 185, 129, 0.1);
+  --color-signal-neutral-bg:       rgba(107, 114, 128, 0.15);
+  --color-signal-short-bg:         rgba(239, 68, 68, 0.1);
+  --color-signal-strong-short-bg:  rgba(220, 38, 38, 0.15);
+
+  /* Score colors (health score bar, rayzar score) */
+  --color-score-excellent:  #10b981;  /* ≥ 60 */
+  --color-score-good:       #00d4aa;  /* ≥ 30 */
+  --color-score-moderate:   #f59e0b;  /* ≥ 0  */
+  --color-score-weak:       #f97316;  /* ≥ -30 */
+  --color-score-poor:       #ef4444;  /* < -30 */
+  --color-score-very-poor:  #dc2626;  /* very negative */
+  --color-score-muted:      #484f58;  /* null / no data */
+
+  /* Status colors */
+  --color-status-success:   #10b981;
+  --color-status-warning:   #f59e0b;
+  --color-status-error:     #ef4444;
+  --color-status-info:      #3b82f6;
+  --color-status-orange:    #f97316;
+
+  /* Chart colors (raw values for lightweight-charts are in styles/tokens/colors.ts rawColors) */
+  --color-chart-up:          #10b981;
+  --color-chart-down:        #ef4444;
+  --color-chart-vol-up:      rgba(16, 185, 129, 0.25);
+  --color-chart-vol-down:    rgba(239, 68, 68, 0.25);
+  --color-chart-sma20:       #f59e0b;
+  --color-chart-sma50:       #3b82f6;
+  --color-chart-sma200:      #8b5cf6;
+  --color-chart-rsi:         #8b5cf6;
+  --color-chart-macd:        #00d4aa;
+  --color-chart-macd-signal: #f59e0b;
+  --color-chart-bb:          rgba(139, 92, 246, 0.6);
+  --color-chart-grid:        #161b22;
+  --color-chart-crosshair:   #484f58;
+}
+
+/* ─── Theme: Dark (active default — values above in :root) ────────────────── */
+/* No overrides needed. All :root values above are the dark theme.              */
+/* When setTheme('dark') is called, data-theme="dark" is set on <html>          */
+/* and the same :root values apply — no visual change.                          */
+
+/* ─── Theme: Light — Reserved for UX designer ─────────────────────────────── */
+/* When UX designer joins, they define all --color-* values here.               */
+/* Entire app updates instantly. No component code changes needed.              */
+:root[data-theme="light"] {
+  /* UX designer: define your light theme colours here */
+  /* Example:
+  --color-bg:              #ffffff;
+  --color-panel:           #f6f8fa;
+  --color-card:            #ffffff;
+  --color-elevated:        #eaeef2;
+  --color-text-primary:    #1c2128;
+  --color-text-secondary:  #57606a;
+  --color-text-muted:      #8c959f;
+  --color-text-disabled:   #cfd5dc;
+  --color-teal:            #00b894;
+  --color-amber:           #d97706;
+  --color-bull:            #16a34a;
+  --color-strong-bull:     #166534;
+  --color-bear:            #dc2626;
+  --color-strong-bear:     #991b1b;
+  --color-neutral:         #6b7280;
+  --color-border:          #d0d7de;
+  --color-border-subtle:   #eaeef2;
+  --color-bg-chart:        #ffffff;
+  --color-scrollbar-thumb: #d0d7de;
+  */
+}
+
+/* ─── Theme: Midnight — Reserved for UX designer ──────────────────────────── */
+:root[data-theme="midnight"] {
+  /* UX designer: define deep dark variant here */
+  /* Example:
+  --color-bg:       #000000;
+  --color-panel:    #0a0a0a;
+  --color-card:     #111111;
+  --color-elevated: #1a1a1a;
+  */
 }

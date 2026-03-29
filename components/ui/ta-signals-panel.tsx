@@ -28,21 +28,21 @@ function DirectionIcon({
 }
 
 function directionColor(direction: string): string {
-  if (direction === "bullish") return "#00d4aa";
-  if (direction === "bearish") return "#ef4444";
-  return "#f59e0b";
+  if (direction === "bullish") return "var(--color-teal)";
+  if (direction === "bearish") return "var(--color-bear)";
+  return "var(--color-amber)";
 }
 
 function directionBgClass(direction: string): string {
-  if (direction === "bullish") return "bg-teal-500/10 text-teal-500 border-teal-500/30";
-  if (direction === "bearish") return "bg-red-500/10 text-red-400 border-red-500/30";
-  return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+  if (direction === "bullish") return "bg-accent-teal/10 text-accent-teal border-accent-teal/30";
+  if (direction === "bearish") return "bg-signal-short/10 text-signal-short border-signal-short/30";
+  return "bg-accent-amber/10 text-accent-amber border-accent-amber/30";
 }
 
 function confidenceBarColor(direction: string): string {
-  if (direction === "bullish") return "#00d4aa";
-  if (direction === "bearish") return "#ef4444";
-  return "#f59e0b";
+  if (direction === "bullish") return "var(--color-teal)";
+  if (direction === "bearish") return "var(--color-bear)";
+  return "var(--color-amber)";
 }
 
 function SignalCard({ signal, index }: { signal: TASignalItem; index: number }) {

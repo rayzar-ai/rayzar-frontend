@@ -9,11 +9,11 @@ interface RayzarScoreProps {
 }
 
 function scoreColour(score: number): string {
-  if (score >= 75) return "text-green-400";
-  if (score >= 55) return "text-yellow-400";
-  if (score >= 45) return "text-gray-400";
+  if (score >= 75) return "text-signal-long";
+  if (score >= 55) return "text-accent-amber";
+  if (score >= 45) return "text-signal-neutral";
   if (score >= 25) return "text-orange-400";
-  return "text-red-400";
+  return "text-signal-short";
 }
 
 const sizeClasses = {

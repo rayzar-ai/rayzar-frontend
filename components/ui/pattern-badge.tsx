@@ -42,25 +42,25 @@ function directionColors(direction: "bullish" | "bearish" | "neutral"): {
 } {
   if (direction === "bullish") {
     return {
-      text:   "#00d4aa",
-      bg:     "rgba(0, 212, 170, 0.10)",
-      border: "rgba(0, 212, 170, 0.30)",
-      fill:   "#00d4aa",
+      text:   "var(--color-teal)",
+      bg:     "var(--color-teal-dim)",
+      border: "var(--color-teal-glow)",
+      fill:   "var(--color-teal)",
     };
   }
   if (direction === "bearish") {
     return {
-      text:   "#ef4444",
-      bg:     "rgba(239, 68, 68, 0.10)",
+      text:   "var(--color-bear)",
+      bg:     "var(--color-bear-dim)",
       border: "rgba(239, 68, 68, 0.30)",
-      fill:   "#ef4444",
+      fill:   "var(--color-bear)",
     };
   }
   return {
-    text:   "#f59e0b",
-    bg:     "rgba(245, 158, 11, 0.10)",
+    text:   "var(--color-amber)",
+    bg:     "var(--color-amber-dim)",
     border: "rgba(245, 158, 11, 0.30)",
-    fill:   "#f59e0b",
+    fill:   "var(--color-amber)",
   };
 }
 

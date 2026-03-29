@@ -14,10 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-theme="dark">
       <body
         className="min-h-screen antialiased"
-        style={{ background: "#080c14", color: "#e6edf3" }}
+        style={{ background: 'var(--color-bg)', color: 'var(--color-text-primary)' }}
       >
         <Navbar />
         {children}

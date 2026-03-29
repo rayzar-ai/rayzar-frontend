@@ -9,10 +9,10 @@ interface RegimeBadgeProps {
 
 function regimeColour(regime: string): string {
   const r = regime.toLowerCase();
-  if (r.includes("bull")) return "bg-green-900/40 text-green-400 border-green-800";
-  if (r.includes("bear")) return "bg-red-900/40 text-red-400 border-red-800";
+  if (r.includes("bull")) return "bg-signal-long/10 text-signal-long border-signal-long/30";
+  if (r.includes("bear")) return "bg-signal-short/10 text-signal-short border-signal-short/30";
   if (r.includes("volatile")) return "bg-purple-900/40 text-purple-400 border-purple-800";
-  return "bg-yellow-900/40 text-yellow-400 border-yellow-800";
+  return "bg-accent-amber/10 text-accent-amber border-accent-amber/30";
 }
 
 export function RegimeBadge({ regime, className }: RegimeBadgeProps) {

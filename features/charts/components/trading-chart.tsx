@@ -19,6 +19,7 @@ import {
 import type { OhlcvBar } from "@/lib/api-client";
 import type { TAAnalysisResponse } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { rawColors } from "@/styles/tokens";
 
 interface TradingChartProps {
   bars: OhlcvBar[];
@@ -133,7 +134,7 @@ function computeMacd(
       histogram.push({
         time: t,
         value: h,
-        color: h >= 0 ? "rgba(0,212,170,0.7)" : "rgba(239,68,68,0.7)",
+        color: h >= 0 ? rawColors.chart.macdHistUp : rawColors.chart.macdHistDown,
       });
     }
   }
@@ -288,27 +289,27 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
 
     const chart = createChart(container, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0d1117" },
-        textColor: "#8b949e",
+        background: { type: ColorType.Solid, color: rawColors.chart.bg },
+        textColor: rawColors.chart.textLabel,
         fontFamily: "Inter, system-ui, sans-serif",
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: "#161b22" },
-        horzLines: { color: "#161b22" },
+        vertLines: { color: rawColors.chart.grid },
+        horzLines: { color: rawColors.chart.grid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
-        horzLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
+        vertLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
+        horzLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
       },
       rightPriceScale: {
-        borderColor: "#1e2433",
-        textColor: "#8b949e",
+        borderColor: rawColors.chart.border,
+        textColor: rawColors.chart.textLabel,
         scaleMargins: { top: 0.08, bottom: 0.22 },
       },
       timeScale: {
-        borderColor: "#1e2433",
+        borderColor: rawColors.chart.border,
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 5,
@@ -320,12 +321,12 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
 
     // ── Candlestick ──────────────────────────────────────────────────────
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor:        "#10b981",
-      downColor:      "#ef4444",
-      borderUpColor:  "#10b981",
-      borderDownColor:"#ef4444",
-      wickUpColor:    "#10b981",
-      wickDownColor:  "#ef4444",
+      upColor:        rawColors.chart.up,
+      downColor:      rawColors.chart.down,
+      borderUpColor:  rawColors.chart.up,
+      borderDownColor:rawColors.chart.down,
+      wickUpColor:    rawColors.chart.up,
+      wickDownColor:  rawColors.chart.down,
     });
     candleSeriesRef.current = candleSeries;
 
@@ -340,7 +341,7 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
 
     // ── Volume histogram ──────────────────────────────────────────────────
     const volSeries = chart.addSeries(HistogramSeries, {
-      color: "#26a69a",
+      color: rawColors.chart.up,
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });
@@ -350,28 +351,28 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
     const volData: HistogramData[] = displayBars.map((b) => ({
       time:  b.date as Time,
       value: b.volume,
-      color: b.close >= b.open ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)",
+      color: b.close >= b.open ? rawColors.chart.volumeUp : rawColors.chart.volumeDown,
     }));
     volSeries.setData(volData);
 
     // ── SMA overlays ──────────────────────────────────────────────────────
     if (showSma20 && displayBars.length >= 20) {
       const s = chart.addSeries(LineSeries, {
-        color: "#f59e0b", lineWidth: 1,
+        color: rawColors.chart.sma20, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: true, title: "SMA20",
       });
       s.setData(computeSma(displayBars, 20));
     }
     if (showSma50 && displayBars.length >= 50) {
       const s = chart.addSeries(LineSeries, {
-        color: "#3b82f6", lineWidth: 1,
+        color: rawColors.chart.sma50, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: true, title: "SMA50",
       });
       s.setData(computeSma(displayBars, 50));
     }
     if (showSma200 && displayBars.length >= 200) {
       const s = chart.addSeries(LineSeries, {
-        color: "#8b5cf6", lineWidth: 1,
+        color: rawColors.chart.sma200, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: true, title: "SMA200",
       });
       s.setData(computeSma(displayBars, 200));
@@ -381,17 +382,17 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
     if (indicators.has("BB") && displayBars.length >= 20) {
       const { upper, mid, lower } = computeBollinger(displayBars, 20);
       const bbUpper = chart.addSeries(LineSeries, {
-        color: "rgba(139,92,246,0.6)", lineWidth: 1,
+        color: rawColors.chart.bb, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: false, title: "BB Upper",
       });
       bbUpper.setData(upper);
       const bbMid = chart.addSeries(LineSeries, {
-        color: "rgba(139,92,246,0.4)", lineWidth: 1,
+        color: rawColors.chart.bbMid, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: false, title: "BB Mid",
       });
       bbMid.setData(mid);
       const bbLower = chart.addSeries(LineSeries, {
-        color: "rgba(139,92,246,0.6)", lineWidth: 1,
+        color: rawColors.chart.bb, lineWidth: 1,
         priceLineVisible: false, lastValueVisible: false, title: "BB Lower",
       });
       bbLower.setData(lower);
@@ -402,9 +403,9 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
       for (const signal of taAnalysis.signals) {
         if (!signal.key_levels) continue;
         const color =
-          signal.direction === "bullish" ? "#00d4aa"
-          : signal.direction === "bearish" ? "#ef4444"
-          : "#f59e0b";
+          signal.direction === "bullish" ? rawColors.chart.patternBull
+          : signal.direction === "bearish" ? rawColors.chart.patternBear
+          : rawColors.chart.patternNeutral;
 
         for (const [levelName, price] of Object.entries(signal.key_levels)) {
           if (typeof price !== "number") continue;
@@ -470,29 +471,29 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
 
     const chart = createChart(container, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0d1117" },
-        textColor: "#8b949e",
+        background: { type: ColorType.Solid, color: rawColors.chart.bg },
+        textColor: rawColors.chart.textLabel,
         fontFamily: "Inter, system-ui, sans-serif",
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: "#161b22" },
-        horzLines: { color: "#161b22" },
+        vertLines: { color: rawColors.chart.grid },
+        horzLines: { color: rawColors.chart.grid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
-        horzLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
+        vertLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
+        horzLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
       },
-      rightPriceScale: { borderColor: "#1e2433", textColor: "#8b949e" },
-      timeScale: { borderColor: "#1e2433", timeVisible: false, secondsVisible: false },
+      rightPriceScale: { borderColor: rawColors.chart.border, textColor: rawColors.chart.textLabel },
+      timeScale: { borderColor: rawColors.chart.border, timeVisible: false, secondsVisible: false },
       width: container.clientWidth,
       height: 100,
     });
     rsiChartRef.current = chart;
 
     const rsiSeries = chart.addSeries(LineSeries, {
-      color: "#8b5cf6",
+      color: rawColors.chart.rsi,
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true,
@@ -504,8 +505,8 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
     const maxT = rsiData[rsiData.length - 1]?.time;
     const minT = rsiData[0]?.time;
     if (maxT && minT) {
-      rsiSeries.createPriceLine({ price: 70, color: "#ef4444", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "OB" });
-      rsiSeries.createPriceLine({ price: 30, color: "#10b981", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "OS" });
+      rsiSeries.createPriceLine({ price: 70, color: rawColors.chart.rsiOb, lineWidth: 1, lineStyle: LineStyle.Dashed, title: "OB" });
+      rsiSeries.createPriceLine({ price: 30, color: rawColors.chart.rsiOs, lineWidth: 1, lineStyle: LineStyle.Dashed, title: "OS" });
     }
 
     chart.timeScale().fitContent();
@@ -538,35 +539,35 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
 
     const chart = createChart(container, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0d1117" },
-        textColor: "#8b949e",
+        background: { type: ColorType.Solid, color: rawColors.chart.bg },
+        textColor: rawColors.chart.textLabel,
         fontFamily: "Inter, system-ui, sans-serif",
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: "#161b22" },
-        horzLines: { color: "#161b22" },
+        vertLines: { color: rawColors.chart.grid },
+        horzLines: { color: rawColors.chart.grid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
-        horzLine: { color: "#484f58", width: 1, style: LineStyle.Dashed },
+        vertLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
+        horzLine: { color: rawColors.chart.crosshair, width: 1, style: LineStyle.Dashed },
       },
-      rightPriceScale: { borderColor: "#1e2433", textColor: "#8b949e" },
-      timeScale: { borderColor: "#1e2433", timeVisible: false, secondsVisible: false },
+      rightPriceScale: { borderColor: rawColors.chart.border, textColor: rawColors.chart.textLabel },
+      timeScale: { borderColor: rawColors.chart.border, timeVisible: false, secondsVisible: false },
       width: container.clientWidth,
       height: 100,
     });
     macdChartRef.current = chart;
 
     const histSeries = chart.addSeries(HistogramSeries, {
-      color: "#00d4aa",
+      color: rawColors.chart.macd,
       priceScaleId: "right",
     });
     histSeries.setData(histogram);
 
     const macdSeries = chart.addSeries(LineSeries, {
-      color: "#00d4aa",
+      color: rawColors.chart.macd,
       lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: true,
@@ -575,7 +576,7 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
     macdSeries.setData(macdLine);
 
     const sigSeries = chart.addSeries(LineSeries, {
-      color: "#f59e0b",
+      color: rawColors.chart.macdSignal,
       lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: true,
@@ -621,10 +622,10 @@ export function TradingChart({ bars, ticker, taAnalysis, height = 420 }: Trading
         {/* Ticker + price */}
         <div className="flex items-center gap-2 mr-3">
           <span className="font-mono text-sm font-bold text-text-primary">{ticker}</span>
-          <span className="font-mono text-sm font-semibold" style={{ color: isPositive ? "#10b981" : "#ef4444" }}>
+          <span className="font-mono text-sm font-semibold" style={{ color: isPositive ? "var(--color-bull)" : "var(--color-bear)" }}>
             ${lastBar.close.toFixed(2)}
           </span>
-          <span className="font-mono text-xs" style={{ color: isPositive ? "#10b981" : "#ef4444" }}>
+          <span className="font-mono text-xs" style={{ color: isPositive ? "var(--color-bull)" : "var(--color-bear)" }}>
             {isPositive ? "+" : ""}{priceChange.toFixed(2)} ({isPositive ? "+" : ""}{priceChangePct.toFixed(2)}%)
           </span>
         </div>

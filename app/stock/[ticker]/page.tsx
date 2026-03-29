@@ -16,7 +16,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
-import type { Signal, TAAnalysisResponse, TASignalItem } from "@/lib/api-client";
+import type { Signal, TAAnalysisResponse, TASignalItem, EarningsQuarter, OptionsSnapshot } from "@/lib/api-client";
 import { TradingChart } from "@/features/charts/components/trading-chart";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
@@ -173,11 +173,13 @@ export default async function StockPage({ params }: StockPageProps) {
   const upper = ticker.toUpperCase();
 
   // Fetch all data in parallel
-  const [signalRes, ohlcvRes, fundamentalsRes, taAnalysisRes] = await Promise.allSettled([
+  const [signalRes, ohlcvRes, fundamentalsRes, taAnalysisRes, earningsRes, optionsRes] = await Promise.allSettled([
     apiClient.getSignalByTicker(upper),
     apiClient.getOhlcv(upper, 365),
     apiClient.getFundamentals(upper),
     apiClient.getTAAnalysis(upper),
+    apiClient.getEarnings(upper),
+    apiClient.getOptions(upper),
   ]);
 
   const signal: Signal | null =
@@ -197,6 +199,16 @@ export default async function StockPage({ params }: StockPageProps) {
 
   const taAnalysis: TAAnalysisResponse | null =
     taAnalysisRes.status === "fulfilled" ? taAnalysisRes.value : null;
+
+  const earningsHistory: EarningsQuarter[] =
+    earningsRes.status === "fulfilled" && earningsRes.value.success
+      ? (earningsRes.value.data ?? [])
+      : [];
+
+  const optionsSnapshot: OptionsSnapshot | null =
+    optionsRes.status === "fulfilled" && optionsRes.value.success
+      ? optionsRes.value.data ?? null
+      : null;
 
   // 404 if nothing exists for this ticker
   if (!signal && bars.length === 0) {
@@ -371,6 +383,102 @@ export default async function StockPage({ params }: StockPageProps) {
                     Next earnings: <span className="text-text-secondary">{fundamentals.earnings_date}</span>
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Earnings history table */}
+            {earningsHistory.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Earnings History
+                </h2>
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-elevated">
+                        <th className="px-3 py-2 text-left font-semibold text-text-muted">Report Date</th>
+                        <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Actual</th>
+                        <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Est.</th>
+                        <th className="px-3 py-2 text-right font-semibold text-text-muted">Surprise</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {earningsHistory.slice(0, 4).map((row) => {
+                        const surprise = row.surprise_pct;
+                        const surpriseColor =
+                          surprise === null ? undefined
+                          : surprise >= 0 ? "#10b981"
+                          : "#ef4444";
+                        return (
+                          <tr
+                            key={row.report_date}
+                            className="border-b border-border last:border-0 hover:bg-elevated/50 transition-colors"
+                          >
+                            <td className="px-3 py-2 font-mono text-text-secondary">{row.report_date}</td>
+                            <td className="px-3 py-2 text-right font-mono text-text-primary">
+                              {row.eps_actual !== null ? row.eps_actual.toFixed(2) : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono text-text-secondary">
+                              {row.eps_estimate !== null ? row.eps_estimate.toFixed(2) : "—"}
+                            </td>
+                            <td
+                              className="px-3 py-2 text-right font-mono font-semibold"
+                              style={{ color: surpriseColor }}
+                            >
+                              {surprise !== null ? `${surprise >= 0 ? "+" : ""}${surprise.toFixed(1)}%` : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Options snapshot */}
+            {optionsSnapshot && (
+              <div>
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Options Snapshot
+                  <span className="ml-2 font-normal normal-case text-text-muted">as of {optionsSnapshot.date}</span>
+                </h2>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <MetricCell
+                    label="IV Rank"
+                    value={optionsSnapshot.iv_rank !== null ? `${optionsSnapshot.iv_rank.toFixed(1)}%` : null}
+                    highlight={
+                      optionsSnapshot.iv_rank !== null
+                        ? optionsSnapshot.iv_rank >= 50 ? "#f59e0b"
+                        : "#6b7280"
+                        : undefined
+                    }
+                  />
+                  <MetricCell
+                    label="Put/Call Ratio"
+                    value={optionsSnapshot.put_call_ratio !== null ? optionsSnapshot.put_call_ratio.toFixed(2) : null}
+                    highlight={
+                      optionsSnapshot.put_call_ratio !== null
+                        ? optionsSnapshot.put_call_ratio >= 1.0 ? "#ef4444"
+                        : "#10b981"
+                        : undefined
+                    }
+                  />
+                  <MetricCell
+                    label="Max Pain"
+                    value={optionsSnapshot.max_pain !== null ? `$${optionsSnapshot.max_pain.toFixed(2)}` : null}
+                  />
+                  <MetricCell
+                    label="Call Wall"
+                    value={optionsSnapshot.call_wall !== null ? `$${optionsSnapshot.call_wall.toFixed(2)}` : null}
+                    highlight="#10b981"
+                  />
+                  <MetricCell
+                    label="Put Wall"
+                    value={optionsSnapshot.put_wall !== null ? `$${optionsSnapshot.put_wall.toFixed(2)}` : null}
+                    highlight="#ef4444"
+                  />
+                </div>
               </div>
             )}
           </div>

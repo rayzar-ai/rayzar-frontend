@@ -12,14 +12,14 @@ function getConsensus(buy: number, hold: number, sell: number): {
   color: string;
 } {
   const total = buy + hold + sell;
-  if (total === 0) return { label: "N/A", color: "#6b7280" };
+  if (total === 0) return { label: "N/A", color: "var(--color-neutral)" };
   const buyRatio = buy / total;
   const sellRatio = sell / total;
-  if (buyRatio >= 0.7) return { label: "Strong Buy", color: "#10b981" };
-  if (buyRatio >= 0.5) return { label: "Buy", color: "#00d4aa" };
-  if (sellRatio >= 0.5) return { label: "Sell", color: "#ef4444" };
-  if (sellRatio >= 0.3) return { label: "Underperform", color: "#f97316" };
-  return { label: "Hold", color: "#f59e0b" };
+  if (buyRatio >= 0.7) return { label: "Strong Buy",    color: "var(--color-bull)" };
+  if (buyRatio >= 0.5) return { label: "Buy",           color: "var(--color-teal)" };
+  if (sellRatio >= 0.5) return { label: "Sell",         color: "var(--color-bear)" };
+  if (sellRatio >= 0.3) return { label: "Underperform", color: "var(--color-status-orange)" };
+  return { label: "Hold", color: "var(--color-amber)" };
 }
 
 interface DonutSegment {
@@ -38,7 +38,7 @@ function DonutChart({ segments, size = 80 }: { segments: DonutSegment[]; size?: 
           cy={size / 2}
           r={size / 2 - 8}
           fill="none"
-          stroke="#1e2433"
+          stroke="var(--color-border)"
           strokeWidth="10"
         />
       </svg>
@@ -73,7 +73,7 @@ function DonutChart({ segments, size = 80 }: { segments: DonutSegment[]; size?: 
         cy={cy}
         r={r}
         fill="none"
-        stroke="#1e2433"
+        stroke="var(--color-border)"
         strokeWidth="10"
       />
       {/* Segments */}
@@ -121,9 +121,9 @@ export function AnalystPanel({ fundamentals, currentPrice, className }: AnalystP
       : null;
 
   const segments: DonutSegment[] = [
-    { value: buy,  color: "#10b981", label: "Buy" },
-    { value: hold, color: "#f59e0b", label: "Hold" },
-    { value: sell, color: "#ef4444", label: "Sell" },
+    { value: buy,  color: "var(--color-bull)",  label: "Buy" },
+    { value: hold, color: "var(--color-amber)", label: "Hold" },
+    { value: sell, color: "var(--color-bear)",  label: "Sell" },
   ];
 
   if (total === 0) {
@@ -209,7 +209,7 @@ export function AnalystPanel({ fundamentals, currentPrice, className }: AnalystP
             {upside !== null && (
               <span
                 className="font-mono font-semibold"
-                style={{ color: upside >= 0 ? "#10b981" : "#ef4444" }}
+                style={{ color: upside >= 0 ? "var(--color-bull)" : "var(--color-bear)" }}
               >
                 {upside >= 0 ? "+" : ""}{upside.toFixed(1)}% upside
               </span>
@@ -237,9 +237,9 @@ export function AnalystPanel({ fundamentals, currentPrice, className }: AnalystP
                 className="font-mono text-sm font-bold"
                 style={{
                   color:
-                    upside === null ? "#e6edf3"
-                    : upside >= 0 ? "#10b981"
-                    : "#ef4444",
+                    upside === null ? "var(--color-text-primary)"
+                    : upside >= 0 ? "var(--color-bull)"
+                    : "var(--color-bear)",
                 }}
               >
                 ${target.toFixed(2)}
