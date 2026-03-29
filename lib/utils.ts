@@ -18,6 +18,7 @@ export function signalColour(signalClass: Signal["signal_class"]): string {
     NEUTRAL:      "text-signal-neutral",
     SHORT:        "text-signal-short",
     STRONG_SHORT: "text-signal-strong-short",
+    NO_TRADE:     "text-signal-no-trade",
   };
   return map[signalClass] ?? "text-signal-neutral";
 }
@@ -30,6 +31,7 @@ export function signalBgColour(signalClass: Signal["signal_class"]): string {
     NEUTRAL:      "signal-bg-neutral",
     SHORT:        "signal-bg-short",
     STRONG_SHORT: "signal-bg-strong-short",
+    NO_TRADE:     "signal-bg-no-trade",
   };
   return map[signalClass] ?? "signal-bg-neutral";
 }

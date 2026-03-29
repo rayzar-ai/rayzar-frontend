@@ -13,6 +13,7 @@ const SIGNAL_LABELS: Record<Signal["signal_class"], string> = {
   NEUTRAL:      "Neutral",
   SHORT:        "Short",
   STRONG_SHORT: "S.Short",
+  NO_TRADE:     "No Trade",
 };
 
 interface SearchBarProps {

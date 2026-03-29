@@ -37,6 +37,7 @@ const config: Config = {
           "neutral":      "#6b7280",
           "short":        "#ef4444",
           "strong-short": "#dc2626",
+          "no-trade":     "#d97706",  // amber-600 — caution, not directional
         },
 
         // ── Regime colors ───────────────────────────────────────────────────

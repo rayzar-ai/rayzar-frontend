@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpDown, ArrowUp, ArrowDown,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, Star,
 } from "lucide-react";
 import type { Signal, MarketRegime } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
@@ -14,13 +14,14 @@ import { RayzarScore } from "@/components/ui/rayzar-score";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { cn, formatDate } from "@/lib/utils";
 
-type SortKey = "ticker" | "signal_class" | "rayzar_score" | "health_score" | "regime" | "signal_date";
+type SortKey = "ticker" | "signal_class" | "rayzar_score" | "health_score" | "confidence" | "regime" | "signal_date";
 type SortDir = "asc" | "desc";
 
 interface DashboardClientProps {
   signals: Signal[];
   activeClass: string;
   regime: MarketRegime | null;
+  watchedTickers?: string[];
 }
 
 function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
@@ -37,16 +38,19 @@ function TaDirectionIcon({ direction }: { direction: string | null }) {
 }
 
 const SIGNAL_ORDER: Record<Signal["signal_class"], number> = {
-  STRONG_LONG: 5, LONG: 4, NEUTRAL: 3, SHORT: 2, STRONG_SHORT: 1,
+  STRONG_LONG: 5, LONG: 4, NEUTRAL: 3, SHORT: 2, STRONG_SHORT: 1, NO_TRADE: 0,
 };
 
-export function DashboardClient({ signals, activeClass, regime }: DashboardClientProps) {
+export function DashboardClient({ signals, activeClass, regime, watchedTickers = [] }: DashboardClientProps) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("rayzar_score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [regimeFilter, setRegimeFilter] = useState<string>("");
+  const [sectorFilter, setSectorFilter] = useState<string>("");
   const [dirFilter, setDirFilter] = useState<string>(activeClass);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const watchedSet = useMemo(() => new Set(watchedTickers.map((t) => t.toUpperCase())), [watchedTickers]);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -57,7 +61,6 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
     }
   }
 
-  // Parse features_used for each signal
   const enrichedSignals = useMemo(() => {
     return signals.map((s) => ({
       ...s,
@@ -65,23 +68,26 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
     }));
   }, [signals]);
 
-  // Unique regimes for filter dropdown
   const uniqueRegimes = useMemo(() => {
     const set = new Set(signals.map((s) => s.regime).filter(Boolean));
     return Array.from(set).sort();
   }, [signals]);
 
-  // Filter
+  const uniqueSectors = useMemo(() => {
+    const set = new Set(signals.map((s) => s.sector).filter((x): x is string => !!x));
+    return Array.from(set).sort();
+  }, [signals]);
+
   const filtered = useMemo(() => {
     return enrichedSignals.filter((s) => {
       if (dirFilter && s.signal_class !== dirFilter) return false;
       if (regimeFilter && s.regime !== regimeFilter) return false;
+      if (sectorFilter && s.sector !== sectorFilter) return false;
       if (searchQuery && !s.ticker.toUpperCase().includes(searchQuery.toUpperCase())) return false;
       return true;
     });
-  }, [enrichedSignals, dirFilter, regimeFilter, searchQuery]);
+  }, [enrichedSignals, dirFilter, regimeFilter, sectorFilter, searchQuery]);
 
-  // Sort
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       let cmp = 0;
@@ -95,6 +101,8 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
         const aH = a._features?.health_score ?? -999;
         const bH = b._features?.health_score ?? -999;
         cmp = aH - bH;
+      } else if (sortKey === "confidence") {
+        cmp = a.confidence - b.confidence;
       } else if (sortKey === "regime") {
         cmp = a.regime.localeCompare(b.regime);
       } else if (sortKey === "signal_date") {
@@ -122,7 +130,6 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
     <div className="space-y-4">
       {/* ── Filter / search bar ─────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Quick search */}
         <input
           type="text"
           placeholder="Filter ticker..."
@@ -131,7 +138,6 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
           className="h-8 rounded-lg border border-border bg-panel px-3 font-mono text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-teal/60 w-36"
         />
 
-        {/* Direction filter */}
         <select
           value={dirFilter}
           onChange={(e) => setDirFilter(e.target.value)}
@@ -145,7 +151,6 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
           <option value="STRONG_SHORT">Strong Short</option>
         </select>
 
-        {/* Regime filter */}
         {uniqueRegimes.length > 0 && (
           <select
             value={regimeFilter}
@@ -159,9 +164,24 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
           </select>
         )}
 
-        {/* Result count */}
+        {uniqueSectors.length > 0 && (
+          <select
+            value={sectorFilter}
+            onChange={(e) => setSectorFilter(e.target.value)}
+            className="h-8 rounded-lg border border-border bg-panel px-2 text-xs text-text-secondary outline-none focus:border-accent-teal/60"
+          >
+            <option value="">All Sectors</option>
+            {uniqueSectors.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        )}
+
         <span className="ml-auto text-xs text-text-muted">
           {sorted.length} of {signals.length} signals
+          {watchedSet.size > 0 && (
+            <span className="ml-2 text-accent-teal">· {watchedSet.size} watched</span>
+          )}
         </span>
       </div>
 
@@ -181,9 +201,11 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-panel/60 text-left">
+                  <th className="w-8 px-2 py-3" />
                   <ThButton col="ticker" label="Ticker" />
                   <ThButton col="signal_class" label="Signal" />
                   <ThButton col="rayzar_score" label="Score" />
+                  <ThButton col="confidence" label="Conf%" />
                   <ThButton col="health_score" label="Health" />
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-text-muted">
                     TA Dir
@@ -202,19 +224,33 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
                   const healthGrade = features?.health_grade ?? null;
                   const taDir = features?.ta_direction ?? null;
                   const personality = features?.personality_type ?? null;
+                  const isWatched = watchedSet.has(signal.ticker.toUpperCase());
 
                   return (
                     <tr
                       key={signal.id}
-                      className="table-row-hover group"
+                      className={cn(
+                        "table-row-hover group",
+                        isWatched && "bg-accent-teal/5 hover:bg-accent-teal/10"
+                      )}
                       onClick={() => router.push(`/stock/${signal.ticker}`)}
                     >
+                      {/* Watched star */}
+                      <td className="w-8 pl-3 pr-1">
+                        {isWatched && (
+                          <Star className="h-3 w-3 fill-accent-teal text-accent-teal" />
+                        )}
+                      </td>
+
                       {/* Ticker */}
                       <td className="px-4 py-3">
                         <Link
                           href={`/stock/${signal.ticker}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="font-mono text-sm font-bold text-text-primary hover:text-accent-teal"
+                          className={cn(
+                            "font-mono text-sm font-bold hover:text-accent-teal",
+                            isWatched ? "text-accent-teal" : "text-text-primary"
+                          )}
                         >
                           {signal.ticker}
                         </Link>
@@ -227,10 +263,17 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
 
                       {/* RayZar score */}
                       <td className="px-4 py-3">
-                        <RayzarScore score={signal.rayzar_score} size="sm" />
+                        <RayzarScore score={signal.rayzar_score} size="sm" showGauge={false} />
                       </td>
 
-                      {/* Health score bar (compact) */}
+                      {/* Confidence */}
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs text-text-secondary">
+                          {Math.round(signal.confidence * 100)}%
+                        </span>
+                      </td>
+
+                      {/* Health score bar */}
                       <td className="px-4 py-3">
                         <HealthScoreBar score={healthScore} grade={healthGrade} size="sm" />
                       </td>
@@ -278,22 +321,37 @@ export function DashboardClient({ signals, activeClass, regime }: DashboardClien
               const features = signal._features;
               const healthScore = features?.health_score ?? null;
               const healthGrade = features?.health_grade ?? null;
+              const isWatched = watchedSet.has(signal.ticker.toUpperCase());
 
               return (
                 <Link
                   key={signal.id}
                   href={`/stock/${signal.ticker}`}
-                  className="block rounded-lg border border-border bg-card p-4 transition-colors hover:border-accent-teal/30"
+                  className={cn(
+                    "block rounded-lg border p-4 transition-colors hover:border-accent-teal/30",
+                    isWatched
+                      ? "border-accent-teal/40 bg-accent-teal/5"
+                      : "border-border bg-card"
+                  )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <span className="font-mono text-base font-bold text-text-primary">
-                        {signal.ticker}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {isWatched && <Star className="h-3 w-3 fill-accent-teal text-accent-teal" />}
+                        <span className={cn(
+                          "font-mono text-base font-bold",
+                          isWatched ? "text-accent-teal" : "text-text-primary"
+                        )}>
+                          {signal.ticker}
+                        </span>
+                      </div>
                       <SignalBadge signalClass={signal.signal_class} />
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <RayzarScore score={signal.rayzar_score} size="lg" />
+                      <span className="font-mono text-xs text-text-muted">
+                        {Math.round(signal.confidence * 100)}% conf
+                      </span>
                     </div>
                   </div>
                   <div className="mt-3">

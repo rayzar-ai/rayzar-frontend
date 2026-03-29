@@ -29,6 +29,7 @@ function TickerItem({ signal }: { signal: Signal }) {
     NEUTRAL:      "Neutral",
     SHORT:        "Short",
     STRONG_SHORT: "S.Short",
+    NO_TRADE:     "No Trade",
   };
 
   return (

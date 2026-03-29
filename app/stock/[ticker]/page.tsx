@@ -18,6 +18,8 @@ import { apiClient } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
 import type { Signal, TAAnalysisResponse, TASignalItem, EarningsQuarter, OptionsSnapshot } from "@/lib/api-client";
 import { TradingChart } from "@/features/charts/components/trading-chart";
+import { WorkspaceLayout } from "@/features/workspace/workspace-layout";
+import { StockPageTabs } from "@/features/stock/components/stock-page-tabs";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
 import { AnalystPanel } from "@/components/ui/analyst-panel";
@@ -242,359 +244,322 @@ export default async function StockPage({ params }: StockPageProps) {
   // Pattern badges row
   const patternBadges = buildPatternBadges(taSignals, features);
 
-  return (
-    <main className="min-h-screen bg-background text-text-primary">
-      {/* ── Back + Header ────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 border-b border-border bg-panel/95 backdrop-blur px-4 py-3 sm:px-6">
-        <div className="mx-auto max-w-screen-2xl">
-          {/* Row 1: back + ticker + price + badges */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent-teal/50 hover:text-accent-teal"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Dashboard
-            </Link>
+  // ── 4-pane workspace content ──────────────────────────────────────────────
 
-            <div className="flex items-center gap-3">
-              <h1 className="font-mono text-2xl font-bold text-text-primary">{upper}</h1>
+  // Pane 1 — top-left: Trading chart
+  const paneChart = (
+    <TradingChart
+      bars={bars}
+      ticker={upper}
+      taAnalysis={taAnalysis}
+      signal={signal}
+      earningsHistory={earningsHistory}
+      optionsSnapshot={optionsSnapshot}
+      height={500}
+    />
+  );
 
-              {currentPrice !== null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-mono text-xl font-semibold text-text-primary">
-                    ${currentPrice.toFixed(2)}
-                  </span>
-                  {priceChange !== null && priceChangePct !== null && (
-                    <span
-                      className="font-mono text-sm font-medium"
-                      style={{ color: isPositive ? "#10b981" : "#ef4444" }}
-                    >
-                      {isPositive ? "▲" : "▼"}{Math.abs(priceChange).toFixed(2)}{" "}
-                      ({isPositive ? "+" : ""}{priceChangePct.toFixed(2)}%)
-                    </span>
-                  )}
-                </div>
-              )}
+  // Key levels from TA analysis
+  const keyLevels = taAnalysis?.signals?.length
+    ? (() => {
+        const support: number[] = [];
+        const resistance: number[] = [];
+        for (const sig of taAnalysis.signals) {
+          if (!sig.key_levels) continue;
+          const kl = sig.key_levels as Record<string, number>;
+          if (typeof kl.support === "number") support.push(kl.support);
+          if (typeof kl.resistance === "number") resistance.push(kl.resistance);
+          if (typeof kl.stop_loss === "number") support.push(kl.stop_loss);
+          if (typeof kl.target === "number") resistance.push(kl.target);
+        }
+        return {
+          support: support.length ? Math.min(...support) : null,
+          resistance: resistance.length ? Math.max(...resistance) : null,
+          stop: support.length ? Math.min(...support) : null,
+          target: resistance.length ? Math.max(...resistance) : null,
+        };
+      })()
+    : null;
 
-              {signal && <SignalBadge signalClass={signal.signal_class} />}
-              {signal && <RayzarScore score={signal.rayzar_score} size="md" />}
-              <WatchButton ticker={upper} size="md" />
-            </div>
+  // Pane 2 — top-right: Signal summary + health + personality + regime
+  const paneSignal = (
+    <>
+      {signal && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Signal</h3>
+            <span className="font-mono text-sm font-bold" style={{ color: signal.confidence >= 0.65 ? "#10b981" : signal.confidence >= 0.55 ? "#f59e0b" : "#6b7280" }}>
+              {Math.round(signal.confidence * 100)}% confidence
+            </span>
           </div>
+          <ProbBar label="Long Prob" value={longProb ?? signal.confidence} color="#10b981" />
+          <ProbBar
+            label="Short Prob"
+            value={shortProb ?? (signal.signal_class === "SHORT" || signal.signal_class === "STRONG_SHORT" ? signal.confidence : null)}
+            color="#ef4444"
+          />
+          {signal.reasoning && (
+            <p className="text-xs leading-relaxed text-text-secondary border-t border-border pt-2">
+              {signal.reasoning}
+            </p>
+          )}
+        </div>
+      )}
 
-          {/* Row 2: meta badges */}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {fundamentals?.sector && (
-              <span className="text-xs text-text-secondary">{fundamentals.sector}</span>
-            )}
-            {fundamentals?.sector && personality && (
-              <span className="text-border">·</span>
-            )}
-            {personality && (
-              <span className="rounded border border-border bg-elevated px-2 py-0.5 font-mono text-xs text-text-secondary">
+      {/* Key levels */}
+      {keyLevels && (keyLevels.support !== null || keyLevels.resistance !== null) && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Key Levels</h3>
+          {[
+            { label: "Resistance", value: keyLevels.resistance, color: "#ef4444" },
+            { label: "Target",     value: keyLevels.target,     color: "#10b981" },
+            { label: "Support",    value: keyLevels.support,    color: "#10b981" },
+            { label: "Stop Loss",  value: keyLevels.stop,       color: "#ef4444" },
+          ].filter((l) => l.value !== null).map(({ label, value, color }) => (
+            <div key={label} className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">{label}</span>
+              <span className="font-mono text-xs font-semibold" style={{ color }}>
+                ${(value as number).toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">TA Health Score</h3>
+        <HealthScoreBar score={healthScore} grade={healthGrade} size="lg" />
+      </div>
+
+      {(personality || hurstExp !== null || fundBeta !== null) && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Stock Personality</h3>
+          {personality && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Type</span>
+              <span className="rounded border border-border bg-elevated px-2 py-0.5 font-mono text-xs font-semibold text-accent-teal">
                 {personality}
               </span>
-            )}
-            {macroRegime && (
-              <RegimePill label={`Macro: ${macroRegime}`} type={getRegimeType(macroRegime)} />
-            )}
-            {sectorRegime && (
-              <RegimePill label={`Sector: ${sectorRegime}`} type={getRegimeType(sectorRegime)} />
-            )}
-            {signal?.signal_date && (
-              <span className="text-xs text-text-muted">Signal: {signal.signal_date}</span>
-            )}
+            </div>
+          )}
+          {fundBeta !== null && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Beta</span>
+              <span className="font-mono text-xs text-text-primary">{fundBeta.toFixed(2)}</span>
+            </div>
+          )}
+          {hurstExp !== null && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Hurst Exp.</span>
+              <span className="font-mono text-xs text-text-primary">{hurstExp.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {(macroRegime || sectorRegime) && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Market Regime</h3>
+          {macroRegime && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Macro</span>
+              <RegimePill label={macroRegime} type={getRegimeType(macroRegime)} />
+            </div>
+          )}
+          {sectorRegime && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Sector</span>
+              <RegimePill label={sectorRegime} type={getRegimeType(sectorRegime)} />
+            </div>
+          )}
+          {signal?.regime && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Signal Regime</span>
+              <span className="text-xs text-text-primary">{signal.regime}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  // Pane 3 — bottom-left: Patterns + Fundamentals + Earnings + Options
+  const paneData = (
+    <>
+      {patternBadges.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">Detected Patterns</h2>
+          <div className="flex flex-wrap gap-2">
+            {patternBadges.map((p, i) => (
+              <PatternBadge key={`${p.name}-${i}`} name={p.name} direction={p.direction} confidence={p.confidence} timeframe={p.timeframe} />
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="mx-auto max-w-screen-2xl px-4 py-4 sm:px-6">
-        {/* ── Main grid: chart (left) + signal panel (right) ─────────────── */}
-        <div className="flex flex-col gap-4 lg:flex-row">
-          {/* ── CHART COLUMN ────────────────────────────────────────────── */}
-          <div className="min-w-0 flex-1 space-y-4">
-            {/* Trading chart */}
-            <TradingChart
-              bars={bars}
-              ticker={upper}
-              taAnalysis={taAnalysis}
-              height={460}
+      {fundamentals && (
+        <div>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">Fundamentals</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+            <MetricCell label="Market Cap"  value={formatLargeNumber(fundamentals.market_cap)} />
+            <MetricCell label="P/E Ratio"   value={fundamentals.pe_ratio?.toFixed(1) ?? null} />
+            <MetricCell label="P/S Ratio"   value={fundamentals.ps_ratio?.toFixed(1) ?? null} />
+            <MetricCell label="P/B Ratio"   value={fundamentals.pb_ratio?.toFixed(1) ?? null} />
+            <MetricCell label="Revenue TTM" value={formatLargeNumber(fundamentals.revenue_ttm)} />
+            <MetricCell
+              label="Net Margin"
+              value={fundamentals.profit_margin !== null ? `${(fundamentals.profit_margin * 100).toFixed(1)}%` : null}
+              highlight={
+                fundamentals.profit_margin !== null
+                  ? fundamentals.profit_margin >= 0.15 ? "#10b981"
+                  : fundamentals.profit_margin >= 0 ? "#f59e0b"
+                  : "#ef4444"
+                  : undefined
+              }
             />
-
-            {/* Pattern badges row */}
-            {patternBadges.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Detected Patterns
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {patternBadges.map((p, i) => (
-                    <PatternBadge
-                      key={`${p.name}-${i}`}
-                      name={p.name}
-                      direction={p.direction}
-                      confidence={p.confidence}
-                      timeframe={p.timeframe}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Fundamentals grid */}
-            {fundamentals && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Fundamentals
-                </h2>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                  <MetricCell label="Market Cap" value={formatLargeNumber(fundamentals.market_cap)} />
-                  <MetricCell label="P/E Ratio" value={fundamentals.pe_ratio?.toFixed(1) ?? null} />
-                  <MetricCell label="P/S Ratio" value={fundamentals.ps_ratio?.toFixed(1) ?? null} />
-                  <MetricCell label="P/B Ratio" value={fundamentals.pb_ratio?.toFixed(1) ?? null} />
-                  <MetricCell label="Revenue TTM" value={formatLargeNumber(fundamentals.revenue_ttm)} />
-                  <MetricCell
-                    label="Net Margin"
-                    value={fundamentals.profit_margin !== null ? `${(fundamentals.profit_margin * 100).toFixed(1)}%` : null}
-                    highlight={
-                      fundamentals.profit_margin !== null
-                        ? fundamentals.profit_margin >= 0.15 ? "#10b981"
-                        : fundamentals.profit_margin >= 0 ? "#f59e0b"
-                        : "#ef4444"
-                        : undefined
-                    }
-                  />
-                  <MetricCell label="EPS TTM" value={fundamentals.eps_ttm?.toFixed(2) ?? null} />
-                  <MetricCell
-                    label="Beta"
-                    value={fundamentals.beta?.toFixed(2) ?? (fundBeta !== null ? fundBeta.toFixed(2) : null)}
-                  />
-                  <MetricCell
-                    label="Short Float"
-                    value={fundamentals.short_float !== null ? `${(fundamentals.short_float * 100).toFixed(1)}%` : null}
-                  />
-                  <MetricCell label="Div Yield" value={fundamentals.dividend_yield !== null ? `${(fundamentals.dividend_yield * 100).toFixed(2)}%` : null} />
-                  <MetricCell label="52W High" value={fundamentals.week_52_high?.toFixed(2) ?? null} />
-                  <MetricCell label="52W Low" value={fundamentals.week_52_low?.toFixed(2) ?? null} />
-                </div>
-                {fundamentals.earnings_date && (
-                  <p className="mt-2 text-xs text-text-muted">
-                    Next earnings: <span className="text-text-secondary">{fundamentals.earnings_date}</span>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Earnings history table */}
-            {earningsHistory.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Earnings History
-                </h2>
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-border bg-elevated">
-                        <th className="px-3 py-2 text-left font-semibold text-text-muted">Report Date</th>
-                        <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Actual</th>
-                        <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Est.</th>
-                        <th className="px-3 py-2 text-right font-semibold text-text-muted">Surprise</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {earningsHistory.slice(0, 4).map((row) => {
-                        const surprise = row.surprise_pct;
-                        const surpriseColor =
-                          surprise === null ? undefined
-                          : surprise >= 0 ? "#10b981"
-                          : "#ef4444";
-                        return (
-                          <tr
-                            key={row.report_date}
-                            className="border-b border-border last:border-0 hover:bg-elevated/50 transition-colors"
-                          >
-                            <td className="px-3 py-2 font-mono text-text-secondary">{row.report_date}</td>
-                            <td className="px-3 py-2 text-right font-mono text-text-primary">
-                              {row.eps_actual !== null ? row.eps_actual.toFixed(2) : "—"}
-                            </td>
-                            <td className="px-3 py-2 text-right font-mono text-text-secondary">
-                              {row.eps_estimate !== null ? row.eps_estimate.toFixed(2) : "—"}
-                            </td>
-                            <td
-                              className="px-3 py-2 text-right font-mono font-semibold"
-                              style={{ color: surpriseColor }}
-                            >
-                              {surprise !== null ? `${surprise >= 0 ? "+" : ""}${surprise.toFixed(1)}%` : "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Options snapshot */}
-            {optionsSnapshot && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Options Snapshot
-                  <span className="ml-2 font-normal normal-case text-text-muted">as of {optionsSnapshot.date}</span>
-                </h2>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                  <MetricCell
-                    label="IV Rank"
-                    value={optionsSnapshot.iv_rank !== null ? `${optionsSnapshot.iv_rank.toFixed(1)}%` : null}
-                    highlight={
-                      optionsSnapshot.iv_rank !== null
-                        ? optionsSnapshot.iv_rank >= 50 ? "#f59e0b"
-                        : "#6b7280"
-                        : undefined
-                    }
-                  />
-                  <MetricCell
-                    label="Put/Call Ratio"
-                    value={optionsSnapshot.put_call_ratio !== null ? optionsSnapshot.put_call_ratio.toFixed(2) : null}
-                    highlight={
-                      optionsSnapshot.put_call_ratio !== null
-                        ? optionsSnapshot.put_call_ratio >= 1.0 ? "#ef4444"
-                        : "#10b981"
-                        : undefined
-                    }
-                  />
-                  <MetricCell
-                    label="Max Pain"
-                    value={optionsSnapshot.max_pain !== null ? `$${optionsSnapshot.max_pain.toFixed(2)}` : null}
-                  />
-                  <MetricCell
-                    label="Call Wall"
-                    value={optionsSnapshot.call_wall !== null ? `$${optionsSnapshot.call_wall.toFixed(2)}` : null}
-                    highlight="#10b981"
-                  />
-                  <MetricCell
-                    label="Put Wall"
-                    value={optionsSnapshot.put_wall !== null ? `$${optionsSnapshot.put_wall.toFixed(2)}` : null}
-                    highlight="#ef4444"
-                  />
-                </div>
-              </div>
-            )}
+            <MetricCell label="EPS TTM"    value={fundamentals.eps_ttm?.toFixed(2) ?? null} />
+            <MetricCell label="Beta"        value={fundamentals.beta?.toFixed(2) ?? (fundBeta !== null ? fundBeta.toFixed(2) : null)} />
+            <MetricCell label="Short Float" value={fundamentals.short_float !== null ? `${(fundamentals.short_float * 100).toFixed(1)}%` : null} />
+            <MetricCell label="Div Yield"   value={fundamentals.dividend_yield !== null ? `${(fundamentals.dividend_yield * 100).toFixed(2)}%` : null} />
+            <MetricCell label="52W High"    value={fundamentals.week_52_high?.toFixed(2) ?? null} />
+            <MetricCell label="52W Low"     value={fundamentals.week_52_low?.toFixed(2) ?? null} />
           </div>
+          {fundamentals.earnings_date && (
+            <p className="mt-2 text-xs text-text-muted">Next earnings: <span className="text-text-secondary">{fundamentals.earnings_date}</span></p>
+          )}
+        </div>
+      )}
 
-          {/* ── RIGHT PANEL ─────────────────────────────────────────────── */}
-          <div className="w-full shrink-0 space-y-4 lg:w-80 xl:w-88">
-            {/* Signal probabilities */}
-            {signal && (
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Signal Probability
-                </h3>
-                <ProbBar label="Long Prob" value={longProb ?? signal.confidence} color="#10b981" />
-                <ProbBar
-                  label="Short Prob"
-                  value={shortProb ?? (signal.signal_class === "SHORT" || signal.signal_class === "STRONG_SHORT" ? signal.confidence : null)}
-                  color="#ef4444"
-                />
-                {signal.reasoning && (
-                  <p className="text-xs leading-relaxed text-text-secondary border-t border-border pt-2">
-                    {signal.reasoning}
-                  </p>
-                )}
-              </div>
-            )}
+      {earningsHistory.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">Earnings History</h2>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-elevated">
+                  <th className="px-3 py-2 text-left font-semibold text-text-muted">Report Date</th>
+                  <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Actual</th>
+                  <th className="px-3 py-2 text-right font-semibold text-text-muted">EPS Est.</th>
+                  <th className="px-3 py-2 text-right font-semibold text-text-muted">Surprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                {earningsHistory.slice(0, 4).map((row) => {
+                  const surprise = row.eps_surprise_pct;
+                  const surpriseColor = surprise === null ? undefined : surprise >= 0 ? "#10b981" : "#ef4444";
+                  return (
+                    <tr key={row.report_date} className="border-b border-border last:border-0 hover:bg-elevated/50 transition-colors">
+                      <td className="px-3 py-2 font-mono text-text-secondary">{row.report_date}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text-primary">{row.eps_actual !== null ? row.eps_actual.toFixed(2) : "—"}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text-secondary">{row.eps_estimate !== null ? row.eps_estimate.toFixed(2) : "—"}</td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold" style={{ color: surpriseColor }}>
+                        {surprise !== null ? `${surprise >= 0 ? "+" : ""}${surprise.toFixed(1)}%` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-            {/* Health score */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                TA Health Score
-              </h3>
-              <HealthScoreBar score={healthScore} grade={healthGrade} size="lg" />
+      {optionsSnapshot && (
+        <div>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Options Snapshot
+            <span className="ml-2 font-normal normal-case text-text-muted">as of {optionsSnapshot.snapshot_date}</span>
+          </h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+            <MetricCell label="IV Rank" value={optionsSnapshot.iv_rank !== null ? `${optionsSnapshot.iv_rank.toFixed(1)}%` : null} highlight={optionsSnapshot.iv_rank !== null ? optionsSnapshot.iv_rank >= 50 ? "#f59e0b" : "#6b7280" : undefined} />
+            <MetricCell label="Put/Call" value={optionsSnapshot.pc_ratio !== null ? optionsSnapshot.pc_ratio.toFixed(2) : null} highlight={optionsSnapshot.pc_ratio !== null ? optionsSnapshot.pc_ratio >= 1.0 ? "#ef4444" : "#10b981" : undefined} />
+            <MetricCell label="Max Pain" value={optionsSnapshot.max_pain !== null ? `$${optionsSnapshot.max_pain.toFixed(2)}` : null} />
+            <MetricCell label="Call Wall" value={optionsSnapshot.call_wall !== null ? `$${optionsSnapshot.call_wall.toFixed(2)}` : null} highlight="#10b981" />
+            <MetricCell label="Put Wall"  value={optionsSnapshot.put_wall !== null ? `$${optionsSnapshot.put_wall.toFixed(2)}` : null} highlight="#ef4444" />
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // Pane 4 — bottom-right: TA Signals + Analyst
+  const paneAnalysis = (
+    <>
+      <div className="rounded-lg border border-border bg-card p-4">
+        <TASignalsPanel signals={taSignals} direction={taDirection} summary={taSummary} />
+      </div>
+      <div className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">Analyst Ratings</h3>
+        <AnalystPanel fundamentals={fundamentals ?? null} currentPrice={currentPrice ?? undefined} />
+      </div>
+    </>
+  );
+
+  return (
+    <main className="h-dvh flex flex-col bg-background text-text-primary">
+      {/* ── Sticky header ─────────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 sticky top-0 z-30 border-b border-border bg-panel/95 backdrop-blur px-4 py-2.5 sm:px-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent-teal/50 hover:text-accent-teal"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Dashboard
+          </Link>
+
+          <h1 className="font-mono text-xl font-bold text-text-primary">{upper}</h1>
+
+          {currentPrice !== null && (
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-lg font-semibold text-text-primary">${currentPrice.toFixed(2)}</span>
+              {priceChange !== null && priceChangePct !== null && (
+                <span className="font-mono text-sm font-medium" style={{ color: isPositive ? "#10b981" : "#ef4444" }}>
+                  {isPositive ? "▲" : "▼"}{Math.abs(priceChange).toFixed(2)} ({isPositive ? "+" : ""}{priceChangePct.toFixed(2)}%)
+                </span>
+              )}
             </div>
+          )}
 
-            {/* Personality + stats */}
-            {(personality || hurstExp !== null || fundBeta !== null) && (
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Stock Personality
-                </h3>
-                {personality && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Type</span>
-                    <span className="rounded border border-border bg-elevated px-2 py-0.5 font-mono text-xs font-semibold text-accent-teal">
-                      {personality}
-                    </span>
-                  </div>
-                )}
-                {fundBeta !== null && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Beta</span>
-                    <span className="font-mono text-xs text-text-primary">{fundBeta.toFixed(2)}</span>
-                  </div>
-                )}
-                {hurstExp !== null && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Hurst Exp.</span>
-                    <span className="font-mono text-xs text-text-primary">{hurstExp.toFixed(2)}</span>
-                  </div>
-                )}
-              </div>
+          {signal && <SignalBadge signalClass={signal.signal_class} noTradeReason={signal.no_trade_reason} />}
+          {signal && <RayzarScore score={signal.rayzar_score} size="md" />}
+
+          {fundamentals?.sector && (
+            <span className="hidden sm:inline text-xs text-text-secondary">{fundamentals.sector}</span>
+          )}
+          {personality && (
+            <span className="hidden sm:inline rounded border border-border bg-elevated px-2 py-0.5 font-mono text-xs text-text-secondary">
+              {personality}
+            </span>
+          )}
+          {macroRegime && <RegimePill label={`Macro: ${macroRegime}`} type={getRegimeType(macroRegime)} />}
+          {sectorRegime && <RegimePill label={`Sector: ${sectorRegime}`} type={getRegimeType(sectorRegime)} />}
+
+          <div className="ml-auto flex items-center gap-2">
+            {signal?.signal_date && (
+              <span className="hidden sm:inline text-xs text-text-muted">Signal: {signal.signal_date}</span>
             )}
-
-            {/* Regime panel */}
-            {(macroRegime || sectorRegime) && (
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Market Regime
-                </h3>
-                {macroRegime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Macro</span>
-                    <RegimePill label={macroRegime} type={getRegimeType(macroRegime)} />
-                  </div>
-                )}
-                {sectorRegime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Sector</span>
-                    <RegimePill label={sectorRegime} type={getRegimeType(sectorRegime)} />
-                  </div>
-                )}
-                {signal?.regime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Signal Regime</span>
-                    <span className="text-xs text-text-primary">{signal.regime}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TA Signals panel */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <TASignalsPanel
-                signals={taSignals}
-                direction={taDirection}
-                summary={taSummary}
-              />
-            </div>
-
-            {/* Analyst panel */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Analyst Ratings
-              </h3>
-              <AnalystPanel
-                fundamentals={fundamentals ?? null}
-                currentPrice={currentPrice ?? undefined}
-              />
-            </div>
+            <WatchButton ticker={upper} size="md" />
           </div>
         </div>
       </div>
 
-      {/* ── Disclaimer ───────────────────────────────────────────────────── */}
-      <div className="border-t border-border px-4 py-4 sm:px-6">
-        <p className="mx-auto max-w-screen-2xl text-xs leading-relaxed text-text-muted">
+      {/* ── Tabs: [Chart] [Advanced] ─────────────────────────────────────── */}
+      <StockPageTabs
+        ticker={upper}
+        chartContent={
+          <WorkspaceLayout
+            topLeft={paneChart}
+            topRight={paneSignal}
+            bottomLeft={paneData}
+            bottomRight={paneAnalysis}
+          />
+        }
+      />
+
+      {/* ── Disclaimer ────────────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 border-t border-border px-4 py-1.5 sm:px-6">
+        <p className="text-2xs leading-relaxed text-text-muted line-clamp-1">
           {FINANCIAL_DISCLAIMER}
         </p>
       </div>

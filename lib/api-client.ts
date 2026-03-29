@@ -54,7 +54,8 @@ export interface Signal {
   ticker: string;
   asset_class: string;
   timeframe: string;
-  signal_class: "STRONG_LONG" | "LONG" | "NEUTRAL" | "SHORT" | "STRONG_SHORT";
+  signal_class: "STRONG_LONG" | "LONG" | "NEUTRAL" | "SHORT" | "STRONG_SHORT" | "NO_TRADE";
+  no_trade_reason: string | null;  // populated when signal_class === "NO_TRADE"
   confidence: number;       // 0.0 – 1.0
   rayzar_score: number;     // 0 – 100
   conviction_score: number;
@@ -65,6 +66,7 @@ export interface Signal {
   features_used: unknown | null;
   signal_date: string;      // ISO date "YYYY-MM-DD"
   created_at: string;       // ISO datetime
+  sector: string | null;
 }
 
 export interface SignalListData {
@@ -216,21 +218,24 @@ export interface EarningsQuarter {
   report_date: string;          // "YYYY-MM-DD"
   eps_actual: number | null;
   eps_estimate: number | null;
-  revenue_actual: number | null;
-  surprise_pct: number | null;
+  eps_surprise_pct: number | null;  // matches db_writer column name
+  revenue: number | null;           // matches db_writer column name
+  beat: number | null;              // 1=beat, 0=miss, null=unknown
 }
 
 export interface OptionsSnapshot {
   ticker: string;
-  date: string;                 // "YYYY-MM-DD"
-  put_call_ratio: number | null;
+  snapshot_date: string;        // "YYYY-MM-DD" — matches db_writer column name
+  pc_ratio: number | null;      // matches db_writer column name (NOT put_call_ratio)
   max_pain: number | null;
+  call_wall: number | null;     // used as gamma wall call in chart Pro Mode
+  put_wall: number | null;      // used as gamma wall put in chart Pro Mode
+  current_iv: number | null;
   iv_rank: number | null;
   iv_percentile: number | null;
-  call_wall: number | null;
-  put_wall: number | null;
-  gamma_wall_call: number | null;
-  gamma_wall_put: number | null;
+  total_call_oi: number | null;
+  total_put_oi: number | null;
+  pc_sentiment: string | null;
 }
 
 // ---------------------------------------------------------------------------

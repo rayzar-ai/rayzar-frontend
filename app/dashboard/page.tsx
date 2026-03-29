@@ -95,10 +95,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const signalClass = params.signal_class ?? "";
 
   // Fetch data in parallel
-  const [signalsResult, regimeResult, topSignalsResult] = await Promise.allSettled([
-    apiClient.getSignals({ page, page_size: 100, signal_class: signalClass || undefined }),
+  const [signalsResult, regimeResult, topSignalsResult, watchlistResult] = await Promise.allSettled([
+    apiClient.getSignals({ page, page_size: 200, signal_class: signalClass || undefined }),
     apiClient.getMarketRegime(),
     apiClient.getTopSignals(20),
+    apiClient.getWatchlist(),
   ]);
 
   const signalsData =
@@ -119,6 +120,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       : (signalsData?.signals.slice(0, 20) ?? []);
 
   const allSignals = signalsData?.signals ?? [];
+
+  const watchedTickers: string[] =
+    watchlistResult.status === "fulfilled" && watchlistResult.value.success
+      ? (watchlistResult.value.data ?? []).map((w) => w.ticker)
+      : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -263,6 +269,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               signals={allSignals}
               activeClass={signalClass}
               regime={regime}
+              watchedTickers={watchedTickers}
             />
           </Suspense>
 
