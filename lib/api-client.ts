@@ -172,6 +172,7 @@ export interface TAAnalysisResponse {
  * Parsed from the opaque features_used JSON blob on the Signal object.
  */
 export interface FeatureContext {
+  // Existing fields
   health_score?: number | null;
   health_grade?: string | null;
   personality_type?: string | null;
@@ -186,6 +187,25 @@ export interface FeatureContext {
   beta?: number | null;
   long_prob?: number | null;
   short_prob?: number | null;
+  // MVP1 — TA + ML alignment
+  ta_alignment_status?: string | null;  // STRONG_AGREE | WEAK_AGREE | NEUTRAL | WEAK_CONFLICT | STRONG_CONFLICT
+  ta_conflict_reason?: string | null;
+  swing_candidate?: boolean | null;
+  regime_warning?: boolean | null;
+  // MVP1 — stops + position sizing
+  stop_loss?: number | null;
+  target_1?: number | null;
+  target_2?: number | null;
+  risk_per_share?: number | null;
+  risk_pct?: number | null;
+  shares_1pct_risk?: number | null;
+  position_value_1pct?: number | null;
+  // MVP1 — earnings proximity
+  earnings_proximity_flag?: boolean | null;
+  days_to_earnings?: number | null;
+  // MVP1 — final meta probs
+  final_long_prob?: number | null;
+  final_short_prob?: number | null;
 }
 
 /**
@@ -196,20 +216,35 @@ export function parseFeatureContext(featuresUsed: unknown): FeatureContext | nul
   if (!featuresUsed || typeof featuresUsed !== "object") return null;
   const f = featuresUsed as Record<string, unknown>;
   return {
-    health_score:     typeof f.health_score === "number" ? f.health_score : null,
-    health_grade:     typeof f.health_grade === "string" ? f.health_grade : null,
-    personality_type: typeof f.personality_type === "string" ? f.personality_type : null,
-    macro_regime:     typeof f.macro_regime === "string" ? f.macro_regime : null,
-    sector_regime:    typeof f.sector_regime === "string" ? f.sector_regime : null,
-    ta_direction:     typeof f.ta_direction === "string" ? f.ta_direction : null,
-    ta_summary:       typeof f.ta_summary === "string" ? f.ta_summary : null,
-    pattern_1:        typeof f.pattern_1 === "string" ? f.pattern_1 : null,
-    pattern_2:        typeof f.pattern_2 === "string" ? f.pattern_2 : null,
-    pattern_3:        typeof f.pattern_3 === "string" ? f.pattern_3 : null,
-    hurst_exponent:   typeof f.hurst_exponent === "number" ? f.hurst_exponent : null,
-    beta:             typeof f.beta === "number" ? f.beta : null,
-    long_prob:        typeof f.long_prob === "number" ? f.long_prob : null,
-    short_prob:       typeof f.short_prob === "number" ? f.short_prob : null,
+    health_score:            typeof f.health_score === "number" ? f.health_score : null,
+    health_grade:            typeof f.health_grade === "string" ? f.health_grade : null,
+    personality_type:        typeof f.personality_type === "string" ? f.personality_type : null,
+    macro_regime:            typeof f.macro_regime === "string" ? f.macro_regime : null,
+    sector_regime:           typeof f.sector_regime === "string" ? f.sector_regime : null,
+    ta_direction:            typeof f.ta_direction === "string" ? f.ta_direction : null,
+    ta_summary:              typeof f.ta_summary === "string" ? f.ta_summary : null,
+    pattern_1:               typeof f.pattern_1 === "string" ? f.pattern_1 : null,
+    pattern_2:               typeof f.pattern_2 === "string" ? f.pattern_2 : null,
+    pattern_3:               typeof f.pattern_3 === "string" ? f.pattern_3 : null,
+    hurst_exponent:          typeof f.hurst_exponent === "number" ? f.hurst_exponent : null,
+    beta:                    typeof f.beta === "number" ? f.beta : null,
+    long_prob:               typeof f.long_prob === "number" ? f.long_prob : null,
+    short_prob:              typeof f.short_prob === "number" ? f.short_prob : null,
+    ta_alignment_status:     typeof f.ta_alignment_status === "string" ? f.ta_alignment_status : null,
+    ta_conflict_reason:      typeof f.ta_conflict_reason === "string" ? f.ta_conflict_reason : null,
+    swing_candidate:         typeof f.swing_candidate === "boolean" ? f.swing_candidate : null,
+    regime_warning:          typeof f.regime_warning === "boolean" ? f.regime_warning : null,
+    stop_loss:               typeof f.stop_loss === "number" ? f.stop_loss : null,
+    target_1:                typeof f.target_1 === "number" ? f.target_1 : null,
+    target_2:                typeof f.target_2 === "number" ? f.target_2 : null,
+    risk_per_share:          typeof f.risk_per_share === "number" ? f.risk_per_share : null,
+    risk_pct:                typeof f.risk_pct === "number" ? f.risk_pct : null,
+    shares_1pct_risk:        typeof f.shares_1pct_risk === "number" ? f.shares_1pct_risk : null,
+    position_value_1pct:     typeof f.position_value_1pct === "number" ? f.position_value_1pct : null,
+    earnings_proximity_flag: typeof f.earnings_proximity_flag === "boolean" ? f.earnings_proximity_flag : null,
+    days_to_earnings:        typeof f.days_to_earnings === "number" ? f.days_to_earnings : null,
+    final_long_prob:         typeof f.final_long_prob === "number" ? f.final_long_prob : null,
+    final_short_prob:        typeof f.final_short_prob === "number" ? f.final_short_prob : null,
   };
 }
 

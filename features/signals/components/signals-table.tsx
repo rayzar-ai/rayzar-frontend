@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { Signal, PaginationMeta } from "@/lib/api-client";
+import { parseFeatureContext } from "@/lib/api-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
 import { RegimeBadge } from "@/components/ui/regime-badge";
@@ -63,12 +64,27 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
                 className="group transition-colors hover:bg-elevated/40"
               >
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/stock/${signal.ticker}`}
-                    className="font-mono font-semibold text-text-heading hover:text-signal-long"
-                  >
-                    {signal.ticker}
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/stock/${signal.ticker}`}
+                      className="font-mono font-semibold text-text-heading hover:text-signal-long"
+                    >
+                      {signal.ticker}
+                    </Link>
+                    {(() => {
+                      const fc = parseFeatureContext(signal.features_used);
+                      return (
+                        <>
+                          {fc?.earnings_proximity_flag && (
+                            <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400 cursor-default">⚠️</span>
+                          )}
+                          {fc?.swing_candidate && (
+                            <span title="Swing candidate" className="text-xs text-purple-400 cursor-default">↔</span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <SignalBadge signalClass={signal.signal_class} />
@@ -104,9 +120,22 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
           >
             <div className="flex items-start justify-between">
               <div>
-                <span className="font-mono font-bold text-text-heading">
-                  {signal.ticker}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-text-heading">{signal.ticker}</span>
+                  {(() => {
+                    const fc = parseFeatureContext(signal.features_used);
+                    return (
+                      <>
+                        {fc?.earnings_proximity_flag && (
+                          <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400">⚠️</span>
+                        )}
+                        {fc?.swing_candidate && (
+                          <span title="Swing candidate" className="text-xs text-purple-400">↔</span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
                 <div className="mt-1">
                   <SignalBadge signalClass={signal.signal_class} />
                 </div>
