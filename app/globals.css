@@ -7,57 +7,57 @@
 
 /* ─── Design System Variables ─────────────────────────────────────────────── */
 :root {
-  /* Background layers */
-  --color-bg:       #080c14;
-  --color-panel:    #0d1117;
-  --color-card:     #111827;
-  --color-elevated: #161b22;
+  /* Background layers — Webull-style navy blue */
+  --color-bg:       #0b1426;
+  --color-panel:    #0f1b33;
+  --color-card:     #132040;
+  --color-elevated: #1a2b4a;
 
   /* Borders */
-  --color-border:        #1e2433;
-  --color-border-subtle: #161b22;
-  --color-border-focus:  #00d4aa;
+  --color-border:        #1e3059;
+  --color-border-subtle: #132040;
+  --color-border-focus:  #4a9eff;
 
   /* Text */
-  --color-text-primary:   #e6edf3;
-  --color-text-secondary: #8b949e;
-  --color-text-muted:     #484f58;
-  --color-text-disabled:  #30363d;
+  --color-text-primary:   #e8edf5;
+  --color-text-secondary: #8ba3c7;
+  --color-text-muted:     #4d6490;
+  --color-text-disabled:  #2d4470;
 
-  /* Accent teal — primary CTA, bullish */
-  --color-teal:       #00d4aa;
-  --color-teal-dim:   rgba(0, 212, 170, 0.15);
-  --color-teal-glow:  rgba(0, 212, 170, 0.3);
+  /* Accent blue — primary CTA (replaces teal) */
+  --color-teal:       #4a9eff;
+  --color-teal-dim:   rgba(74, 158, 255, 0.15);
+  --color-teal-glow:  rgba(74, 158, 255, 0.3);
 
   /* Accent amber — warnings, neutral */
   --color-amber:     #f59e0b;
   --color-amber-dim: rgba(245, 158, 11, 0.15);
 
-  /* Signal colors */
-  --color-bull:         #10b981;
-  --color-bull-dim:     rgba(16, 185, 129, 0.15);
-  --color-strong-bull:  #059669;
-  --color-bear:         #ef4444;
-  --color-bear-dim:     rgba(239, 68, 68, 0.15);
-  --color-strong-bear:  #dc2626;
-  --color-neutral:      #6b7280;
+  /* Signal colors — Webull-style green/red */
+  --color-bull:         #00c087;
+  --color-bull-dim:     rgba(0, 192, 135, 0.15);
+  --color-strong-bull:  #00a073;
+  --color-bear:         #ff4b4b;
+  --color-bear-dim:     rgba(255, 75, 75, 0.15);
+  --color-strong-bear:  #e53935;
+  --color-neutral:      #8ba3c7;
 
   /* Regime colors */
-  --color-regime-bull:       #10b981;
+  --color-regime-bull:       #00c087;
   --color-regime-recovering: #f59e0b;
-  --color-regime-neutral:    #6b7280;
-  --color-regime-bear:       #ef4444;
+  --color-regime-neutral:    #8ba3c7;
+  --color-regime-bear:       #ff4b4b;
 
   /* Tailwind compatibility */
-  --background: 216 43% 6%;
-  --foreground: 210 40% 92%;
-  --muted: 217 19% 17%;
-  --muted-foreground: 215 14% 56%;
-  --border: 218 28% 17%;
-  --card: 218 26% 12%;
-  --card-foreground: 210 40% 92%;
-  --primary: 166 100% 42%;
-  --primary-foreground: 222 47% 8%;
+  --background: 220 52% 10%;
+  --foreground: 214 42% 92%;
+  --muted: 220 40% 17%;
+  --muted-foreground: 214 28% 60%;
+  --border: 220 48% 23%;
+  --card: 220 52% 16%;
+  --card-foreground: 214 42% 92%;
+  --primary: 213 100% 64%;
+  --primary-foreground: 220 52% 10%;
 }
 
 /* ─── Base Reset ───────────────────────────────────────────────────────────── */
@@ -255,7 +255,7 @@ body {
 }
 
 .table-row-hover:hover {
-  background-color: rgba(30, 36, 51, 0.6); /* ~--color-border at 60% — UX designer refines */
+  background-color: rgba(30, 48, 89, 0.6);
 }
 
 /* ─── Focus Ring ───────────────────────────────────────────────────────────── */
@@ -280,54 +280,54 @@ a, button {
 /* Existing variables above are UNCHANGED.                                      */
 :root {
   /* Scrollbar */
-  --color-scrollbar-thumb:  #2a3447;
+  --color-scrollbar-thumb:  #1e3059;
 
   /* Extended text */
-  --color-text-inverse:     #080c14;  /* text on teal/accent bg */
+  --color-text-inverse:     #0b1426;  /* text on blue/accent bg */
   --color-text-heading:     #ffffff;  /* h1-h3 headings */
-  --color-text-link:        #00d4aa;  /* clickable links */
+  --color-text-link:        #4a9eff;  /* clickable links */
 
   /* Extended backgrounds */
   --color-bg-overlay:       rgba(0, 0, 0, 0.7);  /* modal backdrop */
-  --color-bg-chart:         #0d1117;              /* chart background */
+  --color-bg-chart:         #0f1b33;              /* chart background */
 
   /* Signal background tints */
-  --color-signal-strong-long-bg:   rgba(5, 150, 105, 0.15);
-  --color-signal-long-bg:          rgba(16, 185, 129, 0.1);
-  --color-signal-neutral-bg:       rgba(107, 114, 128, 0.15);
-  --color-signal-short-bg:         rgba(239, 68, 68, 0.1);
-  --color-signal-strong-short-bg:  rgba(220, 38, 38, 0.15);
+  --color-signal-strong-long-bg:   rgba(0, 160, 115, 0.15);
+  --color-signal-long-bg:          rgba(0, 192, 135, 0.1);
+  --color-signal-neutral-bg:       rgba(139, 163, 199, 0.15);
+  --color-signal-short-bg:         rgba(255, 75, 75, 0.1);
+  --color-signal-strong-short-bg:  rgba(229, 57, 53, 0.15);
 
   /* Score colors (health score bar, rayzar score) */
-  --color-score-excellent:  #10b981;  /* ≥ 60 */
-  --color-score-good:       #00d4aa;  /* ≥ 30 */
+  --color-score-excellent:  #00c087;  /* ≥ 60 */
+  --color-score-good:       #4a9eff;  /* ≥ 30 */
   --color-score-moderate:   #f59e0b;  /* ≥ 0  */
   --color-score-weak:       #f97316;  /* ≥ -30 */
-  --color-score-poor:       #ef4444;  /* < -30 */
-  --color-score-very-poor:  #dc2626;  /* very negative */
-  --color-score-muted:      #484f58;  /* null / no data */
+  --color-score-poor:       #ff4b4b;  /* < -30 */
+  --color-score-very-poor:  #e53935;  /* very negative */
+  --color-score-muted:      #4d6490;  /* null / no data */
 
   /* Status colors */
-  --color-status-success:   #10b981;
+  --color-status-success:   #00c087;
   --color-status-warning:   #f59e0b;
-  --color-status-error:     #ef4444;
-  --color-status-info:      #3b82f6;
+  --color-status-error:     #ff4b4b;
+  --color-status-info:      #4a9eff;
   --color-status-orange:    #f97316;
 
   /* Chart colors (raw values for lightweight-charts are in styles/tokens/colors.ts rawColors) */
-  --color-chart-up:          #10b981;
-  --color-chart-down:        #ef4444;
-  --color-chart-vol-up:      rgba(16, 185, 129, 0.25);
-  --color-chart-vol-down:    rgba(239, 68, 68, 0.25);
+  --color-chart-up:          #00c087;
+  --color-chart-down:        #ff4b4b;
+  --color-chart-vol-up:      rgba(0, 192, 135, 0.25);
+  --color-chart-vol-down:    rgba(255, 75, 75, 0.25);
   --color-chart-sma20:       #f59e0b;
-  --color-chart-sma50:       #3b82f6;
-  --color-chart-sma200:      #8b5cf6;
-  --color-chart-rsi:         #8b5cf6;
-  --color-chart-macd:        #00d4aa;
+  --color-chart-sma50:       #4a9eff;
+  --color-chart-sma200:      #a78bfa;
+  --color-chart-rsi:         #a78bfa;
+  --color-chart-macd:        #4a9eff;
   --color-chart-macd-signal: #f59e0b;
-  --color-chart-bb:          rgba(139, 92, 246, 0.6);
-  --color-chart-grid:        #161b22;
-  --color-chart-crosshair:   #484f58;
+  --color-chart-bb:          rgba(167, 139, 250, 0.6);
+  --color-chart-grid:        #1e3059;
+  --color-chart-crosshair:   #4d6490;
 }
 
 /* ─── Theme: Dark (active default — values above in :root) ────────────────── */

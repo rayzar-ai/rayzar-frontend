@@ -17,27 +17,27 @@ export const darkTheme = {
 
   // Documented values (actual source: app/globals.css :root)
   palette: {
-    bg:       '#080c14',
-    panel:    '#0d1117',
-    card:     '#111827',
-    elevated: '#161b22',
+    bg:       '#0b1426',
+    panel:    '#0f1b33',
+    card:     '#132040',
+    elevated: '#1a2b4a',
 
-    textPrimary:   '#e6edf3',
-    textSecondary: '#8b949e',
-    textMuted:     '#484f58',
-    textDisabled:  '#30363d',
+    textPrimary:   '#e8edf5',
+    textSecondary: '#8ba3c7',
+    textMuted:     '#4d6490',
+    textDisabled:  '#2d4470',
 
-    teal:     '#00d4aa',
+    teal:     '#4a9eff',
     amber:    '#f59e0b',
 
-    bull:        '#10b981',
-    strongBull:  '#059669',
-    bear:        '#ef4444',
-    strongBear:  '#dc2626',
-    neutral:     '#6b7280',
+    bull:        '#00c087',
+    strongBull:  '#00a073',
+    bear:        '#ff4b4b',
+    strongBear:  '#e53935',
+    neutral:     '#8ba3c7',
 
-    border:       '#1e2433',
-    borderSubtle: '#161b22',
-    borderFocus:  '#00d4aa',
+    border:       '#1e3059',
+    borderSubtle: '#132040',
+    borderFocus:  '#4a9eff',
   },
 } as const;
