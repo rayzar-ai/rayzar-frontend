@@ -279,8 +279,7 @@ class RayZarApiClient {
 
     const res = await fetch(url.toString(), {
       headers: this.headers(),
-      // Revalidate every 300 seconds — signals update nightly
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
