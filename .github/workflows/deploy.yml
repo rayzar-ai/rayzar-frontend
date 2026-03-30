@@ -1,18 +1,21 @@
 # =============================================================================
 # .github/workflows/deploy.yml — RayZar Frontend CI/CD
-# Type-checks and lints on every PR.
-# Vercel handles production deployment automatically on push to main
-# via the Vercel GitHub integration (no manual deploy step needed).
-# =============================================================================
 #
-# Required setup:
-#   1. Connect rayzar-frontend repo to Vercel via vercel.com dashboard
-#   2. Set in Vercel environment variables:
-#        NEXT_PUBLIC_API_URL  — EC2 backend URL (e.g. http://<ec2-ip>:8000)
-#        NEXT_PUBLIC_API_KEY  — API key matching rayzar-backend API_KEY setting
-#   3. Vercel will auto-deploy on every push to main
+# On every push/PR to main:  type-check + lint
+# On push to main (after checks pass):  deploy to Vercel production
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN      — Vercel personal access token (vercel.com/account/tokens)
+#   VERCEL_ORG_ID     — from .vercel/project.json after `vercel link` or Vercel dashboard
+#   VERCEL_PROJECT_ID — from .vercel/project.json after `vercel link` or Vercel dashboard
+#
+# One-time setup:
+#   1. Go to vercel.com/account/tokens → create token → add as VERCEL_TOKEN secret
+#   2. Go to your Vercel project → Settings → General → copy Project ID and Team ID
+#      Add as VERCEL_PROJECT_ID and VERCEL_ORG_ID secrets
+# =============================================================================
 
-name: CI
+name: CI / Deploy
 
 on:
   push:
@@ -21,6 +24,7 @@ on:
     branches: [main]
 
 jobs:
+  # ── Checks ─────────────────────────────────────────────────────────────────
   check:
     name: Type-check and lint
     runs-on: ubuntu-latest
@@ -43,3 +47,30 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+  # ── Deploy to Vercel ────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Vercel (production)
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Vercel production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prod --token "$VERCEL_TOKEN"
