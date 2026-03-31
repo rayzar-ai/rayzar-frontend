@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import type React from "react";
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, ScanLine } from "lucide-react";
 import type { TASignalItem } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { useSignalsStore } from "@/store/signals-store";
 
 interface TASignalsPanelProps {
   signals: TASignalItem[];
@@ -49,6 +50,10 @@ function SignalCard({ signal, index }: { signal: TASignalItem; index: number }) 
   const [expanded, setExpanded] = useState(false);
   const color = directionColor(signal.direction);
   const pct = Math.round(signal.confidence * 100);
+  const activeOverlay = useSignalsStore((s) => s.activePatternOverlay);
+  const setActivePatternOverlay = useSignalsStore((s) => s.setActivePatternOverlay);
+  const isActive = activeOverlay?.type === signal.name;
+  const hasOverlay = !!signal.overlay;
 
   return (
     <div
@@ -151,6 +156,28 @@ function SignalCard({ signal, index }: { signal: TASignalItem; index: number }) 
               <span className="rounded border border-border bg-elevated px-1.5 py-0.5 text-2xs capitalize text-text-muted">
                 {signal.status}
               </span>
+            </div>
+          )}
+
+          {/* Show on chart button */}
+          {hasOverlay && (
+            <div className="mt-2">
+              <button
+                onClick={() =>
+                  setActivePatternOverlay(
+                    isActive ? null : { ...signal.overlay!, type: signal.name }
+                  )
+                }
+                className={cn(
+                  "flex items-center gap-1 rounded border px-2 py-0.5 text-2xs transition-colors",
+                  isActive
+                    ? "border-accent-teal/60 bg-accent-teal/10 text-accent-teal"
+                    : "border-border bg-elevated text-text-muted hover:border-accent-teal/40 hover:text-accent-teal"
+                )}
+              >
+                <ScanLine className="h-3 w-3" />
+                {isActive ? "Hide overlay" : "Show on chart"}
+              </button>
             </div>
           )}
         </div>

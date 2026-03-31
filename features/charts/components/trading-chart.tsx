@@ -28,10 +28,11 @@ import {
   type LineData,
   type SeriesMarker,
 } from "lightweight-charts";
-import type { OhlcvBar, Signal, EarningsQuarter, OptionsSnapshot } from "@/lib/api-client";
+import type { OhlcvBar, Signal, EarningsQuarter, OptionsSnapshot, PatternOverlay } from "@/lib/api-client";
 import type { TAAnalysisResponse } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { rawColors } from "@/styles/tokens";
+import { useSignalsStore } from "@/store/signals-store";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -497,6 +498,11 @@ export function TradingChart({
   const adxChartRef   = useRef<IChartApi | null>(null);
   const vdChartRef    = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const overlaySeriesRef = useRef<ISeriesApi<"Line">[]>([]);
+  const baseMarkersRef = useRef<SeriesMarker<Time>[]>([]);
+
+  // ── Store ────────────────────────────────────────────────────────────────────
+  const activePatternOverlay = useSignalsStore((s) => s.activePatternOverlay);
 
   // ── State ───────────────────────────────────────────────────────────────────
   const [timeframe, setTimeframe]   = useState<Timeframe>("D");
@@ -713,8 +719,10 @@ export function TradingChart({
       const arrowSz  = Math.max(1, Math.min(3, Math.ceil(signal.confidence * 3)));
       markers.push({ time: lastBar.date as Time, position: isLong ? "aboveBar" : "belowBar", color: isLong ? rawColors.chart.up : rawColors.chart.down, shape: isLong ? "arrowUp" : "arrowDown", text: `${Math.round(signal.confidence * 100)}%`, size: arrowSz });
     }
-    if (markers.length > 0) {
-      createSeriesMarkers(candleSeries, [...markers].sort((a, b) => String(a.time).localeCompare(String(b.time))));
+    const sortedMarkers = [...markers].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+    baseMarkersRef.current = sortedMarkers;
+    if (sortedMarkers.length > 0) {
+      createSeriesMarkers(candleSeries, sortedMarkers);
     }
 
     // Crosshair hover
@@ -826,6 +834,65 @@ export function TradingChart({
       chartRef.current = null;
     };
   }, [getDisplayBarsCallback, height, showEma, showSma200, showVwap, showSR, showFib, showGamma, isIntraday, proMode, indicators, taAnalysis, signal, earningsHistory, optionsSnapshot]);
+
+  // ── Pattern overlay effect ───────────────────────────────────────────────────
+  useEffect(() => {
+    const chart = chartRef.current;
+    const candleSeries = candleSeriesRef.current;
+
+    // Remove previous overlay series
+    for (const s of overlaySeriesRef.current) {
+      try { chart?.removeSeries(s); } catch { /* already removed */ }
+    }
+    overlaySeriesRef.current = [];
+
+    // Use amber for pattern overlays (structural, not directional)
+    const color = "#f59e0b";
+
+    if (!chart || !candleSeries || !activePatternOverlay) {
+      // Overlay cleared — restore base markers only
+      if (candleSeries) createSeriesMarkers(candleSeries, baseMarkersRef.current);
+      return;
+    }
+
+    // Merge pivot markers with existing earnings/signal markers
+    if (activePatternOverlay.points && activePatternOverlay.points.length > 0) {
+      const pivotMarkers: SeriesMarker<Time>[] = activePatternOverlay.points.map((pt, idx) => ({
+        time: pt.date as Time,
+        position: "aboveBar" as const,
+        color,
+        shape: "circle" as const,
+        text: `P${idx + 1}`,
+        size: 1,
+      }));
+      const merged = [...baseMarkersRef.current, ...pivotMarkers].sort((a, b) =>
+        String(a.time).localeCompare(String(b.time))
+      );
+      createSeriesMarkers(candleSeries, merged);
+    }
+
+    // Render trendlines as LineSeries
+    if (activePatternOverlay.trendlines && activePatternOverlay.trendlines.length > 0) {
+      for (const tl of activePatternOverlay.trendlines) {
+        if (!tl.p1 || !tl.p2) continue;
+        const lineColor = tl.style === "dashed" ? `${color}bb` : color;
+        const s = chart.addSeries(LineSeries, {
+          color: lineColor,
+          lineWidth: 1,
+          lineStyle: tl.style === "dashed" ? LineStyle.Dashed : LineStyle.Solid,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+          title: tl.label ?? "",
+        });
+        s.setData([
+          { time: tl.p1.date as Time, value: tl.p1.price },
+          { time: tl.p2.date as Time, value: tl.p2.price },
+        ]);
+        overlaySeriesRef.current.push(s);
+      }
+    }
+  }, [activePatternOverlay]);
 
   // ── RSI sub-chart ───────────────────────────────────────────────────────────
   useEffect(() => {

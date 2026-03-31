@@ -131,6 +131,38 @@ export interface Fundamentals {
 /**
  * A single TA signal item returned by the /ta-analysis endpoint.
  */
+/** A single pivot point used in a pattern overlay (date + price). */
+export interface OverlayPoint {
+  date: string;    // "YYYY-MM-DD"
+  price: number;
+}
+
+/** A trendline connecting two points, optionally extended and labelled. */
+export interface OverlayTrendline {
+  p1: OverlayPoint;
+  p2: OverlayPoint;
+  extend?: boolean;
+  style?: "solid" | "dashed" | "dotted";
+  label?: string;
+}
+
+/** A shaded price/time zone on the chart. */
+export interface OverlayZone {
+  from_date: string;
+  to_date: string;
+  from_price: number;
+  to_price: number;
+  color: string;
+}
+
+/** Chart overlay data for a detected pattern — pivot points, trendlines, zones. */
+export interface PatternOverlay {
+  type: string;               // "pattern"
+  points: OverlayPoint[];     // key pivot candles (shoulders, peaks, troughs)
+  trendlines?: OverlayTrendline[];
+  zones?: OverlayZone[];
+}
+
 export interface TASignalItem {
   name: string;
   direction: "bullish" | "bearish" | "neutral";
@@ -139,6 +171,7 @@ export interface TASignalItem {
   status?: string;             // e.g. "active", "forming", "completed"
   key_levels?: Record<string, number>;  // e.g. { neckline: 150.5, target: 135.0 }
   description?: string;        // human-readable explanation
+  overlay?: PatternOverlay | null;     // pivot points + trendlines + zones for chart
 }
 
 /**

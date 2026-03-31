@@ -12,7 +12,7 @@
 
 import { create } from "zustand";
 import { apiClient } from "@/lib/api-client";
-import type { MarketRegime } from "@/lib/api-client";
+import type { MarketRegime, PatternOverlay } from "@/lib/api-client";
 
 interface SignalFilters {
   signalClass: string;   // "" = all classes
@@ -33,6 +33,10 @@ interface SignalsState {
   // Market regime (cached after first load, refreshed on demand)
   regime: MarketRegime | null;
   setRegime: (regime: MarketRegime | null) => void;
+
+  // Active pattern overlay (set when user clicks a TA signal name)
+  activePatternOverlay: PatternOverlay | null;
+  setActivePatternOverlay: (overlay: PatternOverlay | null) => void;
 
   // Watchlist — synced with backend (RDS via FastAPI)
   watchlist: string[];
@@ -64,6 +68,9 @@ export const useSignalsStore = create<SignalsState>((set, get) => ({
 
   regime: null,
   setRegime: (regime) => set({ regime }),
+
+  activePatternOverlay: null,
+  setActivePatternOverlay: (overlay) => set({ activePatternOverlay: overlay }),
 
   watchlist: [],
   watchlistLoaded: false,
