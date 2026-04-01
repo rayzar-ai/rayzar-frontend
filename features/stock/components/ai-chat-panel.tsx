@@ -37,9 +37,6 @@ export function AiChatPanel({ ticker }: AiChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
-
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
@@ -114,24 +111,16 @@ export function AiChatPanel({ ticker }: AiChatPanelProps) {
         return;
       }
 
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (apiKey) headers["X-API-Key"] = apiKey;
+      // history excludes the just-added user message (slice(0, -1)) to avoid
+      // sending it twice — the message is also passed as the `message` field.
+      const history = messages.slice(0, -1).slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-      const res = await fetch(`${baseUrl}/api/v1/chat/${encodeURIComponent(ticker)}`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          message: text,
-          history: messages.slice(-10).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-
-      const body = await res.json();
+      const res = await apiClient.chatWithTicker(ticker, text, history);
       const responseText =
-        body?.data?.response ??
+        res.data?.reply ??
         "I couldn't process that request. Please try again.";
 
       setMessages([...newMessages, { role: "assistant", content: responseText }]);

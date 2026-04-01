@@ -306,6 +306,15 @@ export default async function StockPage({ params }: StockPageProps) {
         </div>
       )}
 
+      {/* Earnings proximity warning */}
+      {features?.earnings_proximity_flag && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="text-xs font-medium text-amber-400">
+            ⚠️ Earnings in {features.days_to_earnings} day{features.days_to_earnings === 1 ? "" : "s"} — ML signal does not account for binary event risk. Consider reducing size.
+          </p>
+        </div>
+      )}
+
       {/* Key levels */}
       {keyLevels && (keyLevels.support !== null || keyLevels.resistance !== null) && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-2">
@@ -323,6 +332,88 @@ export default async function StockPage({ params }: StockPageProps) {
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TA + ML Alignment */}
+      {features?.ta_alignment_status && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">TA + ML Alignment</h3>
+          {(() => {
+            const status = features.ta_alignment_status;
+            const badgeMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+              STRONG_AGREE:    { label: "✓ Strong Agree",   color: "#10b981", bg: "#10b98115", border: "#10b98130" },
+              WEAK_AGREE:      { label: "~ Weak Agree",     color: "#6ee7b7", bg: "#6ee7b715", border: "#6ee7b730" },
+              NEUTRAL:         { label: "— Neutral",        color: "#6b7280", bg: "#6b728015", border: "#6b728030" },
+              WEAK_CONFLICT:   { label: "⚠ Weak Conflict",  color: "#f59e0b", bg: "#f59e0b15", border: "#f59e0b30" },
+              STRONG_CONFLICT: { label: "✗ Strong Conflict", color: "#ef4444", bg: "#ef444415", border: "#ef444430" },
+            };
+            const badge = badgeMap[status ?? ""] ?? { label: status, color: "#6b7280", bg: "#6b728015", border: "#6b728030" };
+            return (
+              <>
+                <span
+                  className="inline-flex items-center rounded border px-2 py-0.5 text-xs font-semibold"
+                  style={{ color: badge.color, background: badge.bg, borderColor: badge.border }}
+                >
+                  {badge.label}
+                </span>
+                {features.ta_conflict_reason && (
+                  <p className="text-2xs text-text-muted leading-relaxed">{features.ta_conflict_reason}</p>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Risk Management — ATR stops + position sizing */}
+      {(features?.stop_loss !== null && features?.stop_loss !== undefined ||
+        features?.target_1 !== null && features?.target_1 !== undefined ||
+        features?.target_2 !== null && features?.target_2 !== undefined ||
+        features?.risk_pct !== null && features?.risk_pct !== undefined ||
+        features?.shares_1pct_risk !== null && features?.shares_1pct_risk !== undefined) && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Risk Management</h3>
+          {features?.stop_loss !== null && features?.stop_loss !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Stop Loss</span>
+              <span className="font-mono text-xs font-semibold" style={{ color: "#ef4444" }}>
+                ${(features.stop_loss as number).toFixed(2)}
+              </span>
+            </div>
+          )}
+          {features?.target_1 !== null && features?.target_1 !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Target 1</span>
+              <span className="font-mono text-xs font-semibold" style={{ color: "#10b981" }}>
+                ${(features.target_1 as number).toFixed(2)}
+              </span>
+            </div>
+          )}
+          {features?.target_2 !== null && features?.target_2 !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Target 2</span>
+              <span className="font-mono text-xs font-semibold" style={{ color: "#10b981" }}>
+                ${(features.target_2 as number).toFixed(2)}
+              </span>
+            </div>
+          )}
+          {features?.risk_pct !== null && features?.risk_pct !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Risk/Trade</span>
+              <span className="font-mono text-xs text-text-primary">
+                {(features.risk_pct as number).toFixed(2)}%
+              </span>
+            </div>
+          )}
+          {features?.shares_1pct_risk !== null && features?.shares_1pct_risk !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Shares (1% risk)</span>
+              <span className="font-mono text-xs text-text-primary">
+                {Math.round(features.shares_1pct_risk as number)}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -522,6 +613,11 @@ export default async function StockPage({ params }: StockPageProps) {
           )}
 
           {signal && <SignalBadge signalClass={signal.signal_class} noTradeReason={signal.no_trade_reason} />}
+          {features?.swing_candidate && (
+            <span className="inline-flex items-center gap-1 rounded border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400">
+              ↔ Swing
+            </span>
+          )}
           {signal && <RayzarScore score={signal.rayzar_score} size="md" />}
 
           {fundamentals?.sector && (

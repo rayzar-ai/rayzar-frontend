@@ -365,6 +365,16 @@ class RayZarApiClient {
     return h;
   }
 
+  private async post<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+    const url = new URL(`${this.baseUrl}${path}`);
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(body),
+    });
+    return res.json() as Promise<ApiResponse<T>>;
+  }
+
   private async get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<ApiResponse<T>> {
     const url = new URL(`${this.baseUrl}${path}`);
     if (params) {
@@ -519,6 +529,19 @@ class RayZarApiClient {
     return this.get<OptionsSnapshot | null>(
       `/api/v1/options/${encodeURIComponent(ticker.toUpperCase())}`,
     );
+  }
+
+  // ── Chat Endpoints ────────────────────────────────────────────────────────
+
+  async chatWithTicker(
+    ticker: string,
+    message: string,
+    history: Array<{ role: string; content: string }>,
+  ): Promise<ApiResponse<{ reply: string; ticker: string }>> {
+    return this.post(`/api/v1/chat/${encodeURIComponent(ticker.toUpperCase())}`, {
+      message,
+      history,
+    });
   }
 
   // ── Ideas Endpoints ───────────────────────────────────────────────────────

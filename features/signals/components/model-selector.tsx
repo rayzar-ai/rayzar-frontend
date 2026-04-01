@@ -98,7 +98,7 @@ export function ModelSelector({
           page_size: 200,
           signal_class: activeClass || undefined,
           model: selectedModel,
-        } as Parameters<typeof apiClient.getSignals>[0] & { model?: string });
+        });
         if (res.success && res.data) {
           setSignals(res.data.signals);
         }
