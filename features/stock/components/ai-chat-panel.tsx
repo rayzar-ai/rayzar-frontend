@@ -63,8 +63,8 @@ export function AiChatPanel({ ticker }: AiChatPanelProps) {
       ideaText = match[1].trim();
       // Check if first word looks like a ticker
       const words = ideaText.split(/\s+/);
-      if (words[0] && /^[A-Z]{1,6}$/.test(words[0])) {
-        ticker = words[0];
+      if (words[0] && /^[A-Z]{1,6}$/i.test(words[0])) {
+        ticker = words[0].toUpperCase();
         ideaText = words.slice(1).join(" ");
       }
     } else {
