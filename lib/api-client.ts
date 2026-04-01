@@ -67,6 +67,33 @@ export interface Signal {
   signal_date: string;      // ISO date "YYYY-MM-DD"
   created_at: string;       // ISO datetime
   sector: string | null;
+  model_variant: string | null;   // "ta_only" | "ta_options" — set by service layer
+}
+
+export interface ModelVariant {
+  id: string;
+  name: string;
+  specialists: number;
+  status: string;
+}
+
+export interface TradingIdea {
+  id: string;
+  ticker: string | null;
+  source: string;
+  raw_text: string;
+  url: string | null;
+  assessment: string | null;
+  assessment_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateIdeaRequest {
+  ticker?: string;
+  text: string;
+  source: "chat" | "twitter" | "discord" | "manual";
+  url?: string;
 }
 
 export interface SignalListData {
@@ -314,6 +341,7 @@ export interface GetSignalsParams {
   page?: number;
   page_size?: number;
   signal_class?: string;
+  model?: string;   // "ta_only" | "ta_options"
 }
 
 // ---------------------------------------------------------------------------
@@ -373,7 +401,12 @@ class RayZarApiClient {
       page: params?.page,
       page_size: params?.page_size,
       signal_class: params?.signal_class,
+      model: params?.model,
     });
+  }
+
+  async getModelVariants(): Promise<ApiResponse<ModelVariant[]>> {
+    return this.get<ModelVariant[]>("/api/v1/signals/models");
   }
 
   async getTopSignals(limit = 10): Promise<ApiResponse<Signal[]>> {
@@ -486,6 +519,32 @@ class RayZarApiClient {
     return this.get<OptionsSnapshot | null>(
       `/api/v1/options/${encodeURIComponent(ticker.toUpperCase())}`,
     );
+  }
+
+  // ── Ideas Endpoints ───────────────────────────────────────────────────────
+
+  async createIdea(body: CreateIdeaRequest): Promise<ApiResponse<TradingIdea>> {
+    const url = new URL(`${this.baseUrl}/api/v1/ideas`);
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(body),
+    });
+    return res.json() as Promise<ApiResponse<TradingIdea>>;
+  }
+
+  async getIdeas(params?: {
+    page?: number;
+    page_size?: number;
+    ticker?: string;
+    source?: string;
+  }): Promise<ApiResponse<{ ideas: TradingIdea[]; total: number; page: number; page_size: number }>> {
+    return this.get("/api/v1/ideas", {
+      page: params?.page,
+      page_size: params?.page_size,
+      ticker: params?.ticker,
+      source: params?.source,
+    });
   }
 }
 

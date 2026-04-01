@@ -3,10 +3,11 @@
 /**
  * features/stock/components/stock-page-tabs.tsx — RayZar Frontend
  *
- * Task 2.5c/d: [Chart] [Advanced] tab bar for the stock detail page.
+ * [Chart] [AI Chat] [Advanced] tab bar for the stock detail page.
  *
  * - Chart tab: renders children (the 4-pane WorkspaceLayout from page.tsx)
- * - Advanced tab: placeholder shell with MVP3 feature previews
+ * - AI Chat tab: active AI chat powered by Claude (MVP3)
+ * - Advanced tab: placeholder shell with MVP3+ feature previews
  *
  * Accepts Server Component ReactNode as `chartContent` so the data
  * is fetched server-side and the tab switch is purely client-side.
@@ -22,10 +23,11 @@ import {
   Zap,
   Lock,
 } from "lucide-react";
+import { AiChatPanel } from "./ai-chat-panel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = "chart" | "advanced";
+type Tab = "chart" | "ai_chat" | "advanced";
 
 interface StockPageTabsProps {
   ticker: string;
@@ -160,8 +162,9 @@ function AdvancedTabPlaceholder({ ticker }: { ticker: string }) {
 
 // ── Tab bar + switcher ────────────────────────────────────────────────────────
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: Tab; label: string; badge?: string }[] = [
   { id: "chart",    label: "Chart" },
+  { id: "ai_chat",  label: "AI Chat", badge: "NEW" },
   { id: "advanced", label: "Advanced" },
 ];
 
@@ -173,7 +176,7 @@ export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
       {/* Tab bar */}
       <div className="flex-shrink-0 border-b border-border bg-panel/80">
         <div className="flex items-center gap-0 px-4">
-          {TABS.map(({ id, label }) => (
+          {TABS.map(({ id, label, badge }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -189,8 +192,19 @@ export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
               {activeTab === id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-teal rounded-t-full" />
               )}
-              {/* Coming soon badge */}
-              {id === "advanced" && (
+              {/* Badge */}
+              {badge && (
+                <span className={cn(
+                  "ml-1.5 rounded px-1 py-0.5 text-2xs font-semibold",
+                  badge === "NEW"
+                    ? "bg-signal-long/20 text-signal-long"
+                    : "bg-accent-teal/15 text-accent-teal"
+                )}>
+                  {badge}
+                </span>
+              )}
+              {/* Coming soon badge for advanced */}
+              {id === "advanced" && !badge && (
                 <span className="ml-1.5 rounded bg-accent-teal/15 px-1 py-0.5 text-2xs font-semibold text-accent-teal">
                   MVP3
                 </span>
@@ -205,6 +219,13 @@ export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
         <div className={cn("h-full", activeTab !== "chart" && "hidden")}>
           {chartContent}
         </div>
+        {activeTab === "ai_chat" && (
+          <div className="h-full overflow-y-auto p-4">
+            <div className="mx-auto max-w-2xl h-full flex flex-col">
+              <AiChatPanel ticker={ticker} />
+            </div>
+          </div>
+        )}
         {activeTab === "advanced" && (
           <AdvancedTabPlaceholder ticker={ticker} />
         )}

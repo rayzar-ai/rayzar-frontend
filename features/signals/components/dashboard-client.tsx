@@ -22,6 +22,8 @@ interface DashboardClientProps {
   activeClass: string;
   regime: MarketRegime | null;
   watchedTickers?: string[];
+  showConsensusVotes?: boolean;   // show specialist vote count column
+  totalSpecialists?: number;      // e.g. 7 for ta_only, 8 for ta_options
 }
 
 function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
@@ -41,7 +43,14 @@ const SIGNAL_ORDER: Record<Signal["signal_class"], number> = {
   STRONG_LONG: 5, LONG: 4, NEUTRAL: 3, SHORT: 2, STRONG_SHORT: 1, NO_TRADE: 0,
 };
 
-export function DashboardClient({ signals, activeClass, regime, watchedTickers = [] }: DashboardClientProps) {
+export function DashboardClient({
+  signals,
+  activeClass,
+  regime,
+  watchedTickers = [],
+  showConsensusVotes = false,
+  totalSpecialists = 7,
+}: DashboardClientProps) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("rayzar_score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -207,6 +216,11 @@ export function DashboardClient({ signals, activeClass, regime, watchedTickers =
                   <ThButton col="rayzar_score" label="Score" />
                   <ThButton col="confidence" label="Conf%" />
                   <ThButton col="health_score" label="Health" />
+                  {showConsensusVotes && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Votes
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-text-muted">
                     TA Dir
                   </th>
@@ -277,6 +291,15 @@ export function DashboardClient({ signals, activeClass, regime, watchedTickers =
                       <td className="px-4 py-3">
                         <HealthScoreBar score={healthScore} grade={healthGrade} size="sm" />
                       </td>
+
+                      {/* Consensus votes */}
+                      {showConsensusVotes && (
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-text-secondary">
+                            {Math.round(signal.consensus_score * totalSpecialists)}/{totalSpecialists}
+                          </span>
+                        </td>
+                      )}
 
                       {/* TA direction */}
                       <td className="px-4 py-3">

@@ -13,7 +13,7 @@ import { apiClient } from "@/lib/api-client";
 import type { Signal, MarketRegime } from "@/lib/api-client";
 import { MarketTicker } from "@/components/layout/market-ticker";
 import { SearchBar } from "@/components/ui/search-bar";
-import { DashboardClient } from "@/features/signals/components/dashboard-client";
+import { ModelSelector } from "@/features/signals/components/model-selector";
 import { FINANCIAL_DISCLAIMER } from "@/config/legal";
 
 export const metadata = {
@@ -265,11 +265,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             }
           >
-            <DashboardClient
-              signals={allSignals}
-              activeClass={signalClass}
+            <ModelSelector
+              initialSignals={allSignals}
               regime={regime}
               watchedTickers={watchedTickers}
+              activeClass={signalClass}
             />
           </Suspense>
 
