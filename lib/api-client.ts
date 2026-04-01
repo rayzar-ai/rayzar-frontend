@@ -537,7 +537,7 @@ class RayZarApiClient {
     ticker: string,
     message: string,
     history: Array<{ role: string; content: string }>,
-  ): Promise<ApiResponse<{ reply: string; ticker: string }>> {
+  ): Promise<ApiResponse<{ reply: string; sources: string[] }>> {
     return this.post(`/api/v1/chat/${encodeURIComponent(ticker.toUpperCase())}`, {
       message,
       history,
