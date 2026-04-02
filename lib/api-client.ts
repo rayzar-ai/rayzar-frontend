@@ -474,6 +474,8 @@ export interface GetSignalsParams {
   page_size?: number;
   signal_class?: string;
   model?: string;   // "ta_only" | "ta_options"
+  sector?: string;
+  min_score?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -544,6 +546,8 @@ class RayZarApiClient {
       page_size: params?.page_size,
       signal_class: params?.signal_class,
       model: params?.model,
+      sector: params?.sector,
+      min_score: params?.min_score,
     });
   }
 

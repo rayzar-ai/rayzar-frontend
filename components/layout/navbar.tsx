@@ -10,9 +10,8 @@ import { AlertBell } from "@/features/alerts/components/alert-bell";
 const NAV_LINKS = [
   { href: "/dashboard", label: "Signals" },
   { href: "/portfolio", label: "Portfolio" },
+  { href: "/screener", label: "Screener" },
   { href: "/legal", label: "Disclaimer" },
-  // Upcoming:
-  // { href: "/screener", label: "Screener" },
 ];
 
 export function Navbar() {
