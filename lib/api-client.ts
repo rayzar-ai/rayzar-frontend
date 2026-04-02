@@ -469,6 +469,22 @@ export interface OptionsSnapshot {
 // Query param types
 // ---------------------------------------------------------------------------
 
+export interface SearchResult {
+  ticker: string;
+  signal_class: string;
+  rayzar_score: number;
+  signal_date: string;
+  regime: string;
+}
+
+export interface UpcomingEarning {
+  ticker: string;
+  report_date: string;   // "YYYY-MM-DD"
+  days_until: number;
+  signal_class: string;
+  rayzar_score: number;
+}
+
 export interface GetSignalsParams {
   page?: number;
   page_size?: number;
@@ -561,6 +577,14 @@ class RayZarApiClient {
 
   async getSignalByTicker(ticker: string): Promise<ApiResponse<Signal>> {
     return this.get<Signal>(`/api/v1/signals/${encodeURIComponent(ticker.toUpperCase())}`);
+  }
+
+  async search(q: string, limit = 10): Promise<ApiResponse<SearchResult[]>> {
+    return this.get<SearchResult[]>("/api/v1/search", { q, limit });
+  }
+
+  async getUpcomingEarnings(days = 30): Promise<ApiResponse<UpcomingEarning[]>> {
+    return this.get<UpcomingEarning[]>("/api/v1/earnings/upcoming", { days });
   }
 
   async getMarketRegime(): Promise<ApiResponse<MarketRegime | null>> {

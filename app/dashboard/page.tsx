@@ -14,6 +14,7 @@ import type { Signal, MarketRegime } from "@/lib/api-client";
 import { MarketTicker } from "@/components/layout/market-ticker";
 import { SearchBar } from "@/components/ui/search-bar";
 import { ModelSelector } from "@/features/signals/components/model-selector";
+import { EarningsCalendar } from "@/features/earnings/components/earnings-calendar";
 import { FINANCIAL_DISCLAIMER } from "@/config/legal";
 
 export const metadata = {
@@ -95,11 +96,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const signalClass = params.signal_class ?? "";
 
   // Fetch data in parallel
-  const [signalsResult, regimeResult, topSignalsResult, watchlistResult] = await Promise.allSettled([
+  const [signalsResult, regimeResult, topSignalsResult, watchlistResult, earningsResult] = await Promise.allSettled([
     apiClient.getSignals({ page, page_size: 200, signal_class: signalClass || undefined }),
     apiClient.getMarketRegime(),
     apiClient.getTopSignals(20),
     apiClient.getWatchlist(),
+    apiClient.getUpcomingEarnings(30),
   ]);
 
   const signalsData =
@@ -124,6 +126,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const watchedTickers: string[] =
     watchlistResult.status === "fulfilled" && watchlistResult.value.success
       ? (watchlistResult.value.data ?? []).map((w) => w.ticker)
+      : [];
+
+  const upcomingEarnings =
+    earningsResult.status === "fulfilled" && earningsResult.value.success
+      ? (earningsResult.value.data ?? [])
       : [];
 
   return (
@@ -224,7 +231,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
 
             {/* Quick stats */}
-            <div className="px-4 py-3 space-y-2">
+            <div className="px-4 py-3 space-y-2 border-b border-border">
               <p className="text-xs font-medium text-text-secondary">Overview</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg border border-border bg-card/50 p-2 text-center">
@@ -252,6 +259,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   <p className="text-2xs text-text-muted">Neutral</p>
                 </div>
               </div>
+            </div>
+
+            {/* Earnings Calendar */}
+            <div className="border-b border-border">
+              <div className="px-4 py-3 flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Earnings (30d)
+                </h2>
+                {upcomingEarnings.length > 0 && (
+                  <span className="font-mono text-xs text-text-muted">{upcomingEarnings.length}</span>
+                )}
+              </div>
+              <EarningsCalendar earnings={upcomingEarnings} />
             </div>
           </div>
         </aside>

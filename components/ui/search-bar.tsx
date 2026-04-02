@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
-import type { Signal } from "@/lib/api-client";
+import type { Signal, SearchResult } from "@/lib/api-client";
 import { cn, signalBgColour } from "@/lib/utils";
 
 const SIGNAL_LABELS: Record<Signal["signal_class"], string> = {
@@ -15,6 +15,8 @@ const SIGNAL_LABELS: Record<Signal["signal_class"], string> = {
   STRONG_SHORT: "S.Short",
   NO_TRADE:     "No Trade",
 };
+
+type ResultItem = { ticker: string; signal_class: string; rayzar_score: number; signal_date: string };
 
 interface SearchBarProps {
   className?: string;
@@ -28,19 +30,17 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Signal[]>([]);
+  const [results, setResults] = useState<ResultItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  // Pre-load all signals once for instant client-side results before API responds
   const [allSignals, setAllSignals] = useState<Signal[]>([]);
 
-  // Pre-load all signals once for fast client-side filtering
   useEffect(() => {
-    apiClient.getSignals({ page: 1, page_size: 200 }).then((res) => {
-      if (res.success && res.data) {
-        setAllSignals(res.data.signals);
-      }
-    }).catch(() => {/* silently fail */});
+    apiClient.getSignals({ page: 1, page_size: 250 }).then((res) => {
+      if (res.success && res.data) setAllSignals(res.data.signals);
+    }).catch(() => {});
   }, []);
 
   // Keyboard shortcut: Cmd+K / Ctrl+K to focus
@@ -78,31 +78,28 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
 
     setIsLoading(true);
 
-    // First try client-side filter from pre-loaded signals
-    const clientFiltered = allSignals.filter(
-      (s) => s.ticker.includes(trimmed)
-    ).slice(0, 8);
-
-    if (clientFiltered.length > 0) {
-      setResults(clientFiltered);
+    // Show instant client-side results immediately (exact + prefix + contains)
+    const exact = allSignals.filter((s) => s.ticker === trimmed);
+    const prefix = allSignals.filter((s) => s.ticker !== trimmed && s.ticker.startsWith(trimmed));
+    const contains = allSignals.filter((s) => s.ticker !== trimmed && !s.ticker.startsWith(trimmed) && s.ticker.includes(trimmed));
+    const instant = [...exact, ...prefix, ...contains].slice(0, 8);
+    if (instant.length > 0) {
+      setResults(instant);
       setIsOpen(true);
-      setIsLoading(false);
-      return;
     }
 
-    // Fall back to direct ticker lookup
+    // Then call the real /search API for authoritative ranked results
     try {
-      const res = await apiClient.getSignalByTicker(trimmed);
-      if (res.success && res.data) {
-        setResults([res.data]);
+      const res = await apiClient.search(trimmed, 10);
+      if (res.success && res.data && res.data.length > 0) {
+        setResults(res.data);
         setIsOpen(true);
-      } else {
+      } else if (instant.length === 0) {
         setResults([]);
         setIsOpen(trimmed.length > 0);
       }
     } catch {
-      setResults([]);
-      setIsOpen(trimmed.length > 0);
+      // keep instant results if API fails
     } finally {
       setIsLoading(false);
     }
@@ -114,9 +111,7 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
     setActiveIndex(-1);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      search(val);
-    }, 200);
+    debounceRef.current = setTimeout(() => search(val), 150);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -183,9 +178,7 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
           value={query}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (query.trim()) setIsOpen(true);
-          }}
+          onFocus={() => { if (query.trim()) setIsOpen(true); }}
           placeholder={placeholder}
           className="w-full min-w-[160px] bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
           autoComplete="off"
@@ -211,7 +204,6 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
       {/* Dropdown */}
       {isOpen && (
         <>
-          {/* Backdrop blur hint for elevated context */}
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
           <div className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border border-border bg-panel shadow-panel animate-fade-in">
@@ -221,43 +213,41 @@ export function SearchBar({ className, placeholder = "Search ticker..." }: Searc
               </div>
             ) : (
               <ul role="listbox" aria-label="Search results">
-                {results.slice(0, 8).map((signal, idx) => (
+                {results.slice(0, 8).map((item, idx) => (
                   <li
-                    key={signal.id}
+                    key={item.ticker}
                     role="option"
                     aria-selected={idx === activeIndex}
                     className={cn(
                       "flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-                      idx === activeIndex
-                        ? "bg-elevated"
-                        : "hover:bg-elevated/60"
+                      idx === activeIndex ? "bg-elevated" : "hover:bg-elevated/60"
                     )}
-                    onClick={() => navigateTo(signal.ticker)}
+                    onClick={() => navigateTo(item.ticker)}
                     onMouseEnter={() => setActiveIndex(idx)}
                   >
                     {/* Ticker */}
                     <span className="w-20 shrink-0 font-mono font-semibold text-text-primary">
-                      {signal.ticker}
+                      {item.ticker}
                     </span>
 
                     {/* Signal badge */}
                     <span
                       className={cn(
                         "shrink-0 rounded border px-1.5 py-0.5 text-xs font-medium",
-                        signalBgColour(signal.signal_class)
+                        signalBgColour(item.signal_class as Signal["signal_class"])
                       )}
                     >
-                      {SIGNAL_LABELS[signal.signal_class]}
+                      {SIGNAL_LABELS[item.signal_class as Signal["signal_class"]] ?? item.signal_class}
                     </span>
 
                     {/* Score */}
                     <span className="ml-auto shrink-0 font-mono text-xs text-text-secondary">
-                      {signal.rayzar_score}
+                      {item.rayzar_score}
                     </span>
 
                     {/* Date */}
                     <span className="shrink-0 text-xs text-text-muted">
-                      {signal.signal_date}
+                      {item.signal_date}
                     </span>
                   </li>
                 ))}
