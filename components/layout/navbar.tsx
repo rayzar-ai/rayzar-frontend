@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/ui/search-bar";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Signals" },
+  { href: "/legal", label: "Disclaimer" },
   // Upcoming:
   // { href: "/screener", label: "Screener" },
   // { href: "/watchlist", label: "Watchlist" },
