@@ -3,9 +3,12 @@
 /**
  * features/alerts/components/alerts-panel.tsx — RayZar Frontend
  * Slide-out panel for managing price alert rules and viewing history.
+ * "Scanner" tab shows server-side alerts from the EC2 10-min scanner.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import type { ServerAlert } from "@/lib/api-client";
 import { useAlertsStore } from "@/store/alerts-store";
 import type { AlertRule } from "@/store/alerts-store";
 
@@ -14,6 +17,19 @@ function sessionLabel(session: string): string {
   if (session === "post") return "After-Hours";
   return "Regular";
 }
+
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  stop_loss:      "🔴 Stop Loss Hit",
+  target_1:       "✅ Target 1",
+  target_2:       "🎯 Target 2",
+  rsi_oversold:   "⚡ RSI Oversold",
+  rsi_overbought: "⚡ RSI Overbought",
+  volume_spike:   "📊 Volume Spike",
+  gap_up:         "🟢 Gap Up",
+  gap_down:       "🔴 Gap Down",
+  after_hours:    "🌙 After-Hours",
+  eod_summary:    "📋 EOD Summary",
+};
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleString("en-US", {
@@ -113,7 +129,28 @@ export function AlertsPanel({ onClose }: AlertsPanelProps) {
   const markAllRead   = useAlertsStore((s) => s.markAllRead);
   const clearTriggered = useAlertsStore((s) => s.clearTriggered);
 
-  const [tab, setTab] = useState<"rules" | "history">("rules");
+  const [tab, setTab] = useState<"rules" | "history" | "scanner">("rules");
+  const [serverAlerts, setServerAlerts] = useState<ServerAlert[]>([]);
+  const [loadingServer, setLoadingServer] = useState(false);
+
+  async function loadServerAlerts() {
+    setLoadingServer(true);
+    try {
+      const res = await apiClient.getAlerts(50);
+      if (res.success && res.data) setServerAlerts(res.data);
+    } finally {
+      setLoadingServer(false);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "scanner") loadServerAlerts();
+  }, [tab]);
+
+  async function handleMarkAllServerRead() {
+    await apiClient.markAllAlertsRead();
+    setServerAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
+  }
 
   return (
     <div
@@ -140,18 +177,25 @@ export function AlertsPanel({ onClose }: AlertsPanelProps) {
 
       {/* Tab bar */}
       <div className="flex border-b border-border">
-        {(["rules", "history"] as const).map((t) => (
+        {([
+          { key: "rules",   label: `Rules (${rules.length})` },
+          { key: "history", label: `History (${triggered.length})` },
+          { key: "scanner", label: `Scanner (${serverAlerts.filter((a) => !a.read).length})` },
+        ] as const).map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => { setTab(t); if (t === "history") markAllRead(); }}
+            key={key}
+            onClick={() => {
+              setTab(key);
+              if (key === "history") markAllRead();
+            }}
             className="flex-1 py-2 text-xs font-medium transition-colors"
             style={
-              tab === t
+              tab === key
                 ? { color: "var(--color-teal)", borderBottom: "2px solid var(--color-teal)" }
                 : { color: "var(--color-text-muted)" }
             }
           >
-            {t === "rules" ? `Rules (${rules.length})` : `History (${triggered.length})`}
+            {label}
           </button>
         ))}
       </div>
@@ -244,12 +288,69 @@ export function AlertsPanel({ onClose }: AlertsPanelProps) {
             )}
           </>
         )}
+
+        {tab === "scanner" && (
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-text-muted">EC2 scanner alerts</p>
+              {serverAlerts.some((a) => !a.read) && (
+                <button
+                  onClick={handleMarkAllServerRead}
+                  className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+                >
+                  Mark all read →
+                </button>
+              )}
+            </div>
+
+            {loadingServer ? (
+              <p className="text-center text-xs text-text-muted py-6">Loading…</p>
+            ) : serverAlerts.length === 0 ? (
+              <p className="text-center text-xs text-text-muted py-6">
+                No scanner alerts yet. Scanner runs every 10 min during market hours.
+              </p>
+            ) : (
+              serverAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="rounded-lg border border-border px-3 py-2.5"
+                  style={{
+                    background: alert.read ? "transparent" : "rgba(0,212,170,0.04)",
+                    borderColor: alert.read ? "var(--color-border)" : "rgba(0,212,170,0.2)",
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-mono text-sm font-bold text-text-primary">{alert.ticker}</span>
+                        <span className="text-xs" style={{ color: "var(--color-teal)" }}>
+                          {ALERT_TYPE_LABELS[alert.alert_type] ?? alert.alert_type}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-text-secondary leading-snug">{alert.condition}</p>
+                      {alert.price_at_trigger && (
+                        <span className="font-mono text-xs text-text-muted">${alert.price_at_trigger.toFixed(2)}</span>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-2xs text-text-muted whitespace-nowrap">
+                      {new Date(alert.triggered_at).toLocaleString("en-US", {
+                        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
       </div>
 
       {/* Footer note */}
       <div className="border-t border-border px-3 py-2.5">
         <p className="text-2xs text-text-muted leading-relaxed">
-          Polls every 2 min · Pre-market 4am–9:30am ET · After-hours 4pm–8pm ET
+          {tab === "scanner"
+            ? "EC2 scanner: 10-min during market · 9am pre · 3:45pm after-hours"
+            : "Client polling: every 2 min · Pre-market 4am–9:30am ET · After-hours 4pm–8pm ET"}
         </p>
       </div>
     </div>

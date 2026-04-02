@@ -376,6 +376,28 @@ export interface InsiderActivity {
   transactions: InsiderTransaction[];
 }
 
+export interface ServerAlert {
+  id: string;
+  ticker: string;
+  alert_type: string;
+  condition: string;
+  signal_class: string | null;
+  price_at_trigger: number | null;
+  reference_price: number | null;
+  change_pct: number | null;
+  session: string;
+  read: boolean;
+  triggered_at: string;
+}
+
+export interface ScannerStatus {
+  running: boolean;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  active_tickers_count: number;
+  alerts_today: number;
+}
+
 export interface QuoteData {
   ticker: string;
   price: number | null;
@@ -647,6 +669,22 @@ class RayZarApiClient {
       body: JSON.stringify(body),
     });
     return res.json() as Promise<ApiResponse<TradingIdea>>;
+  }
+
+  async getAlerts(limit = 50): Promise<ApiResponse<ServerAlert[]>> {
+    return this.get<ServerAlert[]>("/api/v1/alerts", { limit });
+  }
+
+  async markAlertRead(alertId: string): Promise<ApiResponse<null>> {
+    return this.post<null>(`/api/v1/alerts/${alertId}/read`, {});
+  }
+
+  async markAllAlertsRead(): Promise<ApiResponse<{ marked_read: number }>> {
+    return this.post<{ marked_read: number }>("/api/v1/alerts/read-all", {});
+  }
+
+  async getScannerStatus(): Promise<ApiResponse<ScannerStatus>> {
+    return this.get<ScannerStatus>("/api/v1/scanner/status");
   }
 
   async getIdeas(params?: {
