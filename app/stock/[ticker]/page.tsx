@@ -310,7 +310,7 @@ export default async function StockPage({ params }: StockPageProps) {
       {features?.earnings_proximity_flag && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
           <p className="text-xs font-medium text-amber-400">
-            ⚠️ Earnings in {features.days_to_earnings} day{features.days_to_earnings === 1 ? "" : "s"} — ML signal does not account for binary event risk. Consider reducing size.
+            ⚠️ {features.days_to_earnings != null ? `Earnings in ${features.days_to_earnings} day${features.days_to_earnings === 1 ? "" : "s"}` : "Earnings approaching"} — ML signal does not account for binary event risk. Consider reducing size.
           </p>
         </div>
       )}

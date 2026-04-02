@@ -111,9 +111,9 @@ export function AiChatPanel({ ticker }: AiChatPanelProps) {
         return;
       }
 
-      // history excludes the just-added user message (slice(0, -1)) to avoid
-      // sending it twice — the message is also passed as the `message` field.
-      const history = messages.slice(0, -1).slice(-10).map((m) => ({
+      // `messages` is the state BEFORE the current message was added, so it
+      // already excludes the new user message — just take the last 10 turns.
+      const history = messages.slice(-10).map((m) => ({
         role: m.role,
         content: m.content,
       }));

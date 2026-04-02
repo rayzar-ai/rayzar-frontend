@@ -781,7 +781,7 @@ export function TradingChart({
       }
 
       // 3. SR level proximity click (within 1% of any SR level)
-      if (srLevels.length > 0) {
+      if (srLevels.length > 0 && displayBars.length > 0) {
         const currentPrice = displayBars[displayBars.length - 1].close;
         const nearby = srLevels.find((l) => Math.abs(l - clickedPrice) / clickedPrice < 0.012);
         if (nearby !== undefined) {
