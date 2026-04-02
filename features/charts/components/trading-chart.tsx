@@ -28,7 +28,7 @@ import {
   type LineData,
   type SeriesMarker,
 } from "lightweight-charts";
-import type { OhlcvBar, Signal, EarningsQuarter, OptionsSnapshot, PatternOverlay } from "@/lib/api-client";
+import type { OhlcvBar, Signal, EarningsQuarter, OptionsSnapshot, PatternOverlay, InsiderActivity } from "@/lib/api-client";
 import type { TAAnalysisResponse } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { rawColors } from "@/styles/tokens";
@@ -43,6 +43,7 @@ interface TradingChartProps {
   signal?: Signal | null;
   earningsHistory?: EarningsQuarter[];
   optionsSnapshot?: OptionsSnapshot | null;
+  insiderActivity?: InsiderActivity | null;
   height?: number;
 }
 
@@ -476,6 +477,7 @@ export function TradingChart({
   signal,
   earningsHistory = [],
   optionsSnapshot,
+  insiderActivity,
   height = 420,
 }: TradingChartProps) {
   // ── Refs ────────────────────────────────────────────────────────────────────
@@ -703,7 +705,7 @@ export function TradingChart({
       }
     }
 
-    // Markers: earnings + prediction arrow
+    // Markers: earnings + insider + prediction arrow
     const markers: SeriesMarker<Time>[] = [];
     if (earningsHistory.length > 0) {
       const dateSet = new Set(displayBars.map((b) => b.date));
@@ -711,6 +713,27 @@ export function TradingChart({
         if (!dateSet.has(eq.report_date)) continue;
         const color = eq.beat === 1 ? rawColors.chart.up : eq.beat === 0 ? rawColors.chart.down : "#f59e0b";
         markers.push({ time: eq.report_date as Time, position: "belowBar", color, shape: "circle", text: "E", size: 1 });
+      }
+    }
+    // Insider buy/sell markers: group by date, one marker per date
+    if (insiderActivity?.transactions.length) {
+      const dateSet = new Set(displayBars.map((b) => b.date));
+      // Group transactions by date: track net buy/sell per date
+      const byDate = new Map<string, { buys: number; sells: number }>();
+      for (const txn of insiderActivity.transactions) {
+        if (!dateSet.has(txn.date)) continue;
+        const entry = byDate.get(txn.date) ?? { buys: 0, sells: 0 };
+        if (txn.is_buy) entry.buys += 1;
+        if (txn.is_sell) entry.sells += 1;
+        byDate.set(txn.date, entry);
+      }
+      for (const [date, { buys, sells }] of byDate) {
+        if (buys > 0) {
+          markers.push({ time: date as Time, position: "aboveBar", color: "#10b981", shape: "arrowUp", text: "I", size: 1 });
+        }
+        if (sells > 0) {
+          markers.push({ time: date as Time, position: "aboveBar", color: "#ef4444", shape: "arrowDown", text: "I", size: 1 });
+        }
       }
     }
     if (signal && signal.signal_class !== "NEUTRAL" && signal.signal_class !== "NO_TRADE" && displayBars.length > 0) {
@@ -780,6 +803,35 @@ export function TradingChart({
         return;
       }
 
+      // 2b. Insider activity click
+      if (insiderActivity?.transactions.length) {
+        const insiderOnDate = insiderActivity.transactions.filter((t) => t.date === clickedDate);
+        if (insiderOnDate.length > 0) {
+          const buys  = insiderOnDate.filter((t) => t.is_buy);
+          const sells = insiderOnDate.filter((t) => t.is_sell);
+          const formatVal = (v: number | null) =>
+            v != null ? (v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${(v / 1e3).toFixed(0)}K`) : "—";
+          setClickInfo({
+            kind:  "earnings",  // reuse earnings styling
+            title: "Insider Activity",
+            rows: [
+              { label: "Date", value: clickedDate },
+              ...(buys.length > 0
+                ? [{ label: "Buys", value: `${buys.length} transaction${buys.length > 1 ? "s" : ""}`, color: "#10b981" }]
+                : []),
+              ...(sells.length > 0
+                ? [{ label: "Sells", value: `${sells.length} transaction${sells.length > 1 ? "s" : ""}`, color: "#ef4444" }]
+                : []),
+              ...(buys[0] ? [{ label: "Insider", value: buys[0].insider.split(" ").slice(0, 2).join(" ") }] : sells[0] ? [{ label: "Insider", value: sells[0].insider.split(" ").slice(0, 2).join(" ") }] : []),
+              ...(buys[0]?.value != null ? [{ label: "Buy Value", value: formatVal(buys[0].value), color: "#10b981" }] : []),
+              ...(sells[0]?.value != null ? [{ label: "Sell Value", value: formatVal(sells[0].value), color: "#ef4444" }] : []),
+            ],
+            x: param.point.x, y: param.point.y,
+          });
+          return;
+        }
+      }
+
       // 3. SR level proximity click (within 1% of any SR level)
       if (srLevels.length > 0 && displayBars.length > 0) {
         const currentPrice = displayBars[displayBars.length - 1].close;
@@ -833,7 +885,7 @@ export function TradingChart({
       chart.remove();
       chartRef.current = null;
     };
-  }, [getDisplayBarsCallback, height, showEma, showSma200, showVwap, showSR, showFib, showGamma, isIntraday, proMode, indicators, taAnalysis, signal, earningsHistory, optionsSnapshot]);
+  }, [getDisplayBarsCallback, height, showEma, showSma200, showVwap, showSR, showFib, showGamma, isIntraday, proMode, indicators, taAnalysis, signal, earningsHistory, optionsSnapshot, insiderActivity]);
 
   // ── Pattern overlay effect ───────────────────────────────────────────────────
   useEffect(() => {

@@ -16,7 +16,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
-import type { Signal, TAAnalysisResponse, TASignalItem, EarningsQuarter, OptionsSnapshot } from "@/lib/api-client";
+import type { Signal, TAAnalysisResponse, TASignalItem, EarningsQuarter, OptionsSnapshot, InsiderActivity } from "@/lib/api-client";
 import { TradingChart } from "@/features/charts/components/trading-chart";
 import { WorkspaceLayout } from "@/features/workspace/workspace-layout";
 import { StockPageTabs } from "@/features/stock/components/stock-page-tabs";
@@ -176,13 +176,14 @@ export default async function StockPage({ params }: StockPageProps) {
   const upper = ticker.toUpperCase();
 
   // Fetch all data in parallel
-  const [signalRes, ohlcvRes, fundamentalsRes, taAnalysisRes, earningsRes, optionsRes] = await Promise.allSettled([
+  const [signalRes, ohlcvRes, fundamentalsRes, taAnalysisRes, earningsRes, optionsRes, insiderRes] = await Promise.allSettled([
     apiClient.getSignalByTicker(upper),
     apiClient.getOhlcv(upper, 365),
     apiClient.getFundamentals(upper),
     apiClient.getTAAnalysis(upper),
     apiClient.getEarnings(upper),
     apiClient.getOptions(upper),
+    apiClient.getInsiderActivity(upper),
   ]);
 
   const signal: Signal | null =
@@ -211,6 +212,11 @@ export default async function StockPage({ params }: StockPageProps) {
   const optionsSnapshot: OptionsSnapshot | null =
     optionsRes.status === "fulfilled" && optionsRes.value.success
       ? optionsRes.value.data ?? null
+      : null;
+
+  const insiderActivity: InsiderActivity | null =
+    insiderRes.status === "fulfilled" && insiderRes.value.success
+      ? insiderRes.value.data ?? null
       : null;
 
   // 404 if nothing exists for this ticker
@@ -256,6 +262,7 @@ export default async function StockPage({ params }: StockPageProps) {
       signal={signal}
       earningsHistory={earningsHistory}
       optionsSnapshot={optionsSnapshot}
+      insiderActivity={insiderActivity}
       height={500}
     />
   );
@@ -584,6 +591,72 @@ export default async function StockPage({ params }: StockPageProps) {
             <MetricCell label="Call Wall" value={optionsSnapshot.call_wall !== null ? `$${optionsSnapshot.call_wall.toFixed(2)}` : null} highlight="#10b981" />
             <MetricCell label="Put Wall"  value={optionsSnapshot.put_wall !== null ? `$${optionsSnapshot.put_wall.toFixed(2)}` : null} highlight="#ef4444" />
           </div>
+        </div>
+      )}
+
+      {insiderActivity && (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Insider Activity</h2>
+            <span
+              className="rounded border px-2 py-0.5 text-2xs font-semibold"
+              style={{
+                color: insiderActivity.insider_sentiment === "bullish" ? "#10b981" : insiderActivity.insider_sentiment === "bearish" ? "#ef4444" : "#6b7280",
+                background: insiderActivity.insider_sentiment === "bullish" ? "#10b98115" : insiderActivity.insider_sentiment === "bearish" ? "#ef444415" : "#6b728015",
+                borderColor: insiderActivity.insider_sentiment === "bullish" ? "#10b98130" : insiderActivity.insider_sentiment === "bearish" ? "#ef444430" : "#6b728030",
+              }}
+            >
+              {insiderActivity.insider_sentiment.charAt(0).toUpperCase() + insiderActivity.insider_sentiment.slice(1)}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-3">
+            <MetricCell label="Buys" value={String(insiderActivity.insider_buy_count)} highlight="#10b981" />
+            <MetricCell label="Sells" value={String(insiderActivity.insider_sell_count)} highlight="#ef4444" />
+            <MetricCell
+              label="Buy Value"
+              value={insiderActivity.insider_buy_value >= 1e6
+                ? `$${(insiderActivity.insider_buy_value / 1e6).toFixed(1)}M`
+                : insiderActivity.insider_buy_value > 0 ? `$${(insiderActivity.insider_buy_value / 1e3).toFixed(0)}K` : "—"}
+              highlight="#10b981"
+            />
+            <MetricCell
+              label="Net Flow"
+              value={insiderActivity.insider_net_value >= 0
+                ? `+$${(insiderActivity.insider_net_value / 1e6).toFixed(1)}M`
+                : `-$${(Math.abs(insiderActivity.insider_net_value) / 1e6).toFixed(1)}M`}
+              highlight={insiderActivity.insider_net_value >= 0 ? "#10b981" : "#ef4444"}
+            />
+          </div>
+          {insiderActivity.transactions.slice(0, 5).length > 0 && (
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-elevated">
+                    <th className="px-3 py-2 text-left font-semibold text-text-muted">Date</th>
+                    <th className="px-3 py-2 text-left font-semibold text-text-muted">Insider</th>
+                    <th className="px-3 py-2 text-right font-semibold text-text-muted">Shares</th>
+                    <th className="px-3 py-2 text-right font-semibold text-text-muted">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {insiderActivity.transactions.slice(0, 5).map((txn, i) => (
+                    <tr key={i} className="border-b border-border last:border-0 hover:bg-elevated/50 transition-colors">
+                      <td className="px-3 py-2 font-mono text-text-secondary">{txn.date}</td>
+                      <td className="px-3 py-2 text-text-primary truncate max-w-[120px]">{txn.insider}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text-secondary">
+                        {txn.shares != null ? txn.shares.toLocaleString() : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold"
+                        style={{ color: txn.is_buy ? "#10b981" : txn.is_sell ? "#ef4444" : "#6b7280" }}>
+                        {txn.is_buy ? "Buy" : txn.is_sell ? "Sell" : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="mt-1.5 text-2xs text-text-muted">Chart markers: ▲ green = insider buy, ▼ red = insider sell. Click marker for detail.</p>
         </div>
       )}
     </>

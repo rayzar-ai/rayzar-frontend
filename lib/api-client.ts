@@ -356,6 +356,26 @@ export function parseFeatureContext(featuresUsed: unknown): FeatureContext | nul
   };
 }
 
+export interface InsiderTransaction {
+  date: string;
+  insider: string;
+  shares: number | null;
+  value: number | null;
+  is_buy: boolean;
+  is_sell: boolean;
+}
+
+export interface InsiderActivity {
+  ticker: string;
+  insider_buy_count: number;
+  insider_sell_count: number;
+  insider_buy_value: number;
+  insider_sell_value: number;
+  insider_net_value: number;
+  insider_sentiment: string;   // "bullish" | "bearish" | "neutral"
+  transactions: InsiderTransaction[];
+}
+
 export interface EarningsQuarter {
   ticker: string;
   report_date: string;          // "YYYY-MM-DD"
@@ -576,6 +596,12 @@ class RayZarApiClient {
   async getOptions(ticker: string): Promise<ApiResponse<OptionsSnapshot | null>> {
     return this.get<OptionsSnapshot | null>(
       `/api/v1/options/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
+  }
+
+  async getInsiderActivity(ticker: string): Promise<ApiResponse<InsiderActivity | null>> {
+    return this.get<InsiderActivity | null>(
+      `/api/v1/insider/${encodeURIComponent(ticker.toUpperCase())}`,
     );
   }
 
