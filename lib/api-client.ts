@@ -376,6 +376,35 @@ export interface InsiderActivity {
   transactions: InsiderTransaction[];
 }
 
+export interface PortfolioPosition {
+  id: string;
+  ticker: string;
+  asset_class: string;
+  quantity: number | null;
+  entry_price: number | null;
+  entry_date: string | null;
+  notes: string | null;
+  created_at: string;
+  // enriched
+  current_price: number | null;
+  pnl_pct: number | null;
+  pnl_value: number | null;
+  signal_class: string | null;
+  rayzar_score: number | null;
+  stop_loss: number | null;
+  target_1: number | null;
+  target_2: number | null;
+}
+
+export interface AddPositionRequest {
+  ticker: string;
+  quantity: number;
+  entry_price: number;
+  entry_date: string;  // YYYY-MM-DD
+  notes?: string;
+  asset_class?: string;
+}
+
 export interface ServerAlert {
   id: string;
   ticker: string;
@@ -669,6 +698,23 @@ class RayZarApiClient {
       body: JSON.stringify(body),
     });
     return res.json() as Promise<ApiResponse<TradingIdea>>;
+  }
+
+  async getPortfolio(): Promise<ApiResponse<PortfolioPosition[]>> {
+    return this.get<PortfolioPosition[]>("/api/v1/portfolio");
+  }
+
+  async addPosition(body: AddPositionRequest): Promise<ApiResponse<PortfolioPosition>> {
+    return this.post<PortfolioPosition>("/api/v1/portfolio", body);
+  }
+
+  async removePosition(ticker: string): Promise<ApiResponse<null>> {
+    const url = `${this.baseUrl}/api/v1/portfolio/${ticker.toUpperCase()}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { "X-API-Key": this.apiKey },
+    });
+    return res.json();
   }
 
   async getAlerts(limit = 50): Promise<ApiResponse<ServerAlert[]>> {
