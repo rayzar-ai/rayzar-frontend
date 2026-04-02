@@ -32,6 +32,7 @@ type Tab = "chart" | "ai_chat" | "advanced";
 interface StockPageTabsProps {
   ticker: string;
   chartContent: React.ReactNode;
+  advancedContent?: React.ReactNode;
 }
 
 // ── Advanced tab placeholder ─────────────────────────────────────────────────
@@ -165,10 +166,10 @@ function AdvancedTabPlaceholder({ ticker }: { ticker: string }) {
 const TABS: { id: Tab; label: string; badge?: string }[] = [
   { id: "chart",    label: "Chart" },
   { id: "ai_chat",  label: "AI Chat", badge: "NEW" },
-  { id: "advanced", label: "Advanced" },
+  { id: "advanced", label: "Advanced", badge: "NEW" },
 ];
 
-export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
+export function StockPageTabs({ ticker, chartContent, advancedContent }: StockPageTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("chart");
 
   return (
@@ -203,12 +204,6 @@ export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
                   {badge}
                 </span>
               )}
-              {/* Coming soon badge for advanced */}
-              {id === "advanced" && !badge && (
-                <span className="ml-1.5 rounded bg-accent-teal/15 px-1 py-0.5 text-2xs font-semibold text-accent-teal">
-                  MVP3
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -227,7 +222,7 @@ export function StockPageTabs({ ticker, chartContent }: StockPageTabsProps) {
           </div>
         )}
         {activeTab === "advanced" && (
-          <AdvancedTabPlaceholder ticker={ticker} />
+          advancedContent ?? <AdvancedTabPlaceholder ticker={ticker} />
         )}
       </div>
     </>

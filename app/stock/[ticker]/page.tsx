@@ -20,6 +20,7 @@ import type { Signal, TAAnalysisResponse, TASignalItem, EarningsQuarter, Options
 import { TradingChart } from "@/features/charts/components/trading-chart";
 import { WorkspaceLayout } from "@/features/workspace/workspace-layout";
 import { StockPageTabs } from "@/features/stock/components/stock-page-tabs";
+import { AdvancedTabContent } from "@/features/stock/components/advanced-tab-content";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
 import { AnalystPanel } from "@/components/ui/analyst-panel";
@@ -588,6 +589,18 @@ export default async function StockPage({ params }: StockPageProps) {
     </>
   );
 
+  // Pane 5 — Advanced tab
+  const paneAdvanced = (
+    <AdvancedTabContent
+      ticker={upper}
+      signal={signal}
+      features={features}
+      currentPrice={currentPrice}
+      taSignals={taSignals}
+      options={optionsSnapshot}
+    />
+  );
+
   // Pane 4 — bottom-right: TA Signals + Analyst
   const paneAnalysis = (
     <>
@@ -666,6 +679,7 @@ export default async function StockPage({ params }: StockPageProps) {
             bottomRight={paneAnalysis}
           />
         }
+        advancedContent={paneAdvanced}
       />
 
       {/* ── Disclaimer ────────────────────────────────────────────────────── */}

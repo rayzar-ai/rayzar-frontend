@@ -266,6 +266,30 @@ export interface FeatureContext {
   // MVP1 — final meta probs
   final_long_prob?: number | null;
   final_short_prob?: number | null;
+  // Advanced Tab — volatility + momentum indicators
+  atr7?: number | null;
+  atr7_pct?: number | null;
+  atr14?: number | null;
+  atr14_pct?: number | null;
+  atr21?: number | null;
+  atr21_pct?: number | null;
+  hv_5d?: number | null;
+  hv_10d?: number | null;
+  hv_20d?: number | null;
+  hv_60d?: number | null;
+  rsi7?: number | null;
+  rsi14?: number | null;
+  rsi21?: number | null;
+  macd_hist?: number | null;
+  macd_bull?: number | null;
+  macd_bear?: number | null;
+  adx?: number | null;
+  trending?: number | null;
+  bb_width_pct?: number | null;
+  bb_kc_squeeze?: number | null;
+  rvol5?: number | null;
+  rvol10?: number | null;
+  unusual_vol?: number | null;
 }
 
 /**
@@ -305,6 +329,30 @@ export function parseFeatureContext(featuresUsed: unknown): FeatureContext | nul
     days_to_earnings:        typeof f.days_to_earnings === "number" ? f.days_to_earnings : null,
     final_long_prob:         typeof f.final_long_prob === "number" ? f.final_long_prob : null,
     final_short_prob:        typeof f.final_short_prob === "number" ? f.final_short_prob : null,
+    // Advanced Tab
+    atr7:                    typeof f.atr7 === "number" ? f.atr7 : null,
+    atr7_pct:                typeof f.atr7_pct === "number" ? f.atr7_pct : null,
+    atr14:                   typeof f.atr14 === "number" ? f.atr14 : null,
+    atr14_pct:               typeof f.atr14_pct === "number" ? f.atr14_pct : null,
+    atr21:                   typeof f.atr21 === "number" ? f.atr21 : null,
+    atr21_pct:               typeof f.atr21_pct === "number" ? f.atr21_pct : null,
+    hv_5d:                   typeof f.hv_5d === "number" ? f.hv_5d : null,
+    hv_10d:                  typeof f.hv_10d === "number" ? f.hv_10d : null,
+    hv_20d:                  typeof f.hv_20d === "number" ? f.hv_20d : null,
+    hv_60d:                  typeof f.hv_60d === "number" ? f.hv_60d : null,
+    rsi7:                    typeof f.rsi7 === "number" ? f.rsi7 : null,
+    rsi14:                   typeof f.rsi14 === "number" ? f.rsi14 : null,
+    rsi21:                   typeof f.rsi21 === "number" ? f.rsi21 : null,
+    macd_hist:               typeof f.macd_hist === "number" ? f.macd_hist : null,
+    macd_bull:               typeof f.macd_bull === "number" ? f.macd_bull : null,
+    macd_bear:               typeof f.macd_bear === "number" ? f.macd_bear : null,
+    adx:                     typeof f.adx === "number" ? f.adx : null,
+    trending:                typeof f.trending === "number" ? f.trending : null,
+    bb_width_pct:            typeof f.bb_width_pct === "number" ? f.bb_width_pct : null,
+    bb_kc_squeeze:           typeof f.bb_kc_squeeze === "number" ? f.bb_kc_squeeze : null,
+    rvol5:                   typeof f.rvol5 === "number" ? f.rvol5 : null,
+    rvol10:                  typeof f.rvol10 === "number" ? f.rvol10 : null,
+    unusual_vol:             typeof f.unusual_vol === "number" ? f.unusual_vol : null,
   };
 }
 
