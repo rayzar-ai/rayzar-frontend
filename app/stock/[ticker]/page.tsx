@@ -306,6 +306,15 @@ export default async function StockPage({ params }: StockPageProps) {
         </div>
       )}
 
+      {/* Short signal confidence warning */}
+      {(signal?.signal_class === "SHORT" || signal?.signal_class === "STRONG_SHORT") && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-4">
+          <p className="text-xs font-medium text-red-400">
+            ⚠️ Short signals have lower validated accuracy (56% directional vs 73% for Strong Long). Only generated in confirmed bear market conditions (SPY below key moving averages). Treat with higher caution and tighter position sizing.
+          </p>
+        </div>
+      )}
+
       {/* Earnings proximity warning */}
       {features?.earnings_proximity_flag && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
@@ -479,12 +488,18 @@ export default async function StockPage({ params }: StockPageProps) {
     <>
       {patternBadges.length > 0 && (
         <div>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">Detected Patterns</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Detected Patterns</h2>
+            <span className="text-2xs text-text-muted italic">Contextual — not used as primary signal</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {patternBadges.map((p, i) => (
               <PatternBadge key={`${p.name}-${i}`} name={p.name} direction={p.direction} confidence={p.confidence} timeframe={p.timeframe} />
             ))}
           </div>
+          <p className="mt-2 text-2xs text-text-muted leading-relaxed">
+            Pattern confidence reflects detection quality, not predictive accuracy. Use alongside ML signal and TA alignment — not in isolation.
+          </p>
         </div>
       )}
 
