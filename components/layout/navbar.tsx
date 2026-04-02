@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Bell, Settings, Zap } from "lucide-react";
+import { BarChart2, Settings, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/ui/search-bar";
+import { AlertBell } from "@/features/alerts/components/alert-bell";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Signals" },
@@ -84,13 +85,7 @@ export function Navbar() {
 
         {/* ── Right controls ──────────────────────────────────────────── */}
         <div className="flex items-center gap-1 ml-auto shrink-0">
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-white/5"
-            title="Alerts (coming soon)"
-            disabled
-          >
-            <Bell className="h-4 w-4 text-text-muted" />
-          </button>
+          <AlertBell />
 
           <button
             className="flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-white/5"

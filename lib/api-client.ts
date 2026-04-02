@@ -376,6 +376,19 @@ export interface InsiderActivity {
   transactions: InsiderTransaction[];
 }
 
+export interface QuoteData {
+  ticker: string;
+  price: number | null;
+  prev_close: number | null;
+  change_pct: number | null;
+  pre_market_price: number | null;
+  pre_market_change_pct: number | null;
+  post_market_price: number | null;
+  post_market_change_pct: number | null;
+  session: "pre" | "regular" | "post" | "closed";
+  market_state: string;
+}
+
 export interface EarningsQuarter {
   ticker: string;
   report_date: string;          // "YYYY-MM-DD"
@@ -602,6 +615,12 @@ class RayZarApiClient {
   async getInsiderActivity(ticker: string): Promise<ApiResponse<InsiderActivity | null>> {
     return this.get<InsiderActivity | null>(
       `/api/v1/insider/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
+  }
+
+  async getQuote(ticker: string): Promise<ApiResponse<QuoteData | null>> {
+    return this.get<QuoteData | null>(
+      `/api/v1/quote/${encodeURIComponent(ticker.toUpperCase())}`,
     );
   }
 
