@@ -171,6 +171,26 @@ function formatLargeNumber(n: number | null): string {
   return `$${n.toFixed(2)}`;
 }
 
+// ── Sector ETF mapping ────────────────────────────────────────────────────────
+const SECTOR_ETF: Record<string, string> = {
+  "Technology":              "XLK",
+  "Financial Services":      "XLF",
+  "Financials":              "XLF",
+  "Healthcare":              "XLV",
+  "Health Care":             "XLV",
+  "Energy":                  "XLE",
+  "Consumer Cyclical":       "XLY",
+  "Consumer Discretionary":  "XLY",
+  "Consumer Defensive":      "XLP",
+  "Consumer Staples":        "XLP",
+  "Industrials":             "XLI",
+  "Basic Materials":         "XLB",
+  "Materials":               "XLB",
+  "Real Estate":             "XLRE",
+  "Utilities":               "XLU",
+  "Communication Services":  "XLC",
+};
+
 export default async function StockPage({ params }: StockPageProps) {
   const { ticker } = await params;
   const upper = ticker.toUpperCase();
@@ -227,6 +247,13 @@ export default async function StockPage({ params }: StockPageProps) {
   // Parse features_used from signal for fallback data
   const features = signal ? parseFeatureContext(signal.features_used) : null;
 
+  // Fetch sector ETF bars for relative strength sub-pane
+  const sectorName = signal?.sector ?? fundamentals?.sector ?? null;
+  const sectorEtf = sectorName ? (SECTOR_ETF[sectorName] ?? null) : null;
+  const sectorBars = sectorEtf
+    ? await apiClient.getOhlcv(sectorEtf, 365).then((r) => (r.success ? (r.data ?? []) : [])).catch(() => [])
+    : [];
+
   // Compose TA data: prefer backend taAnalysis, fall back to features_used
   const healthScore = taAnalysis?.health_score ?? features?.health_score ?? null;
   const healthGrade = taAnalysis?.health_grade ?? features?.health_grade ?? null;
@@ -263,6 +290,8 @@ export default async function StockPage({ params }: StockPageProps) {
       earningsHistory={earningsHistory}
       optionsSnapshot={optionsSnapshot}
       insiderActivity={insiderActivity}
+      sectorBars={sectorBars}
+      sectorEtf={sectorEtf}
       height={500}
     />
   );

@@ -44,13 +44,15 @@ interface TradingChartProps {
   earningsHistory?: EarningsQuarter[];
   optionsSnapshot?: OptionsSnapshot | null;
   insiderActivity?: InsiderActivity | null;
+  sectorBars?: OhlcvBar[] | null;
+  sectorEtf?: string | null;
   height?: number;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Timeframe  = "5m" | "15m" | "1H" | "4H" | "D" | "W" | "M";
-type Indicator  = "RSI" | "MACD" | "BB" | "ATR" | "OBV" | "Stoch" | "ADX" | "VolDelta";
+type Indicator  = "RSI" | "MACD" | "BB" | "ATR" | "OBV" | "Stoch" | "ADX" | "VolDelta" | "SectorRS";
 
 /** Context panel shown on chart click. */
 interface ClickInfo {
@@ -311,6 +313,28 @@ function computeVolDelta(bars: OhlcvBar[]): HistogramData[] {
   }));
 }
 
+function computeRelativeStrength(
+  stockBars: OhlcvBar[],
+  sectorBars: OhlcvBar[],
+): { stock: LineData[]; sector: LineData[] } {
+  if (stockBars.length === 0 || sectorBars.length === 0) return { stock: [], sector: [] };
+  const sectorMap = new Map(sectorBars.map((b) => [b.date, b.close]));
+  // Find first common date
+  const firstCommon = stockBars.find((b) => sectorMap.has(b.date));
+  if (!firstCommon) return { stock: [], sector: [] };
+  const base = firstCommon.close;
+  const sectorBase = sectorMap.get(firstCommon.date)!;
+  const stock: LineData[] = [];
+  const sector: LineData[] = [];
+  for (const b of stockBars) {
+    const sc = sectorMap.get(b.date);
+    if (sc === undefined) continue;
+    stock.push({ time: b.date as Time, value: (b.close / base) * 100 });
+    sector.push({ time: b.date as Time, value: (sc / sectorBase) * 100 });
+  }
+  return { stock, sector };
+}
+
 // ── Resampling ─────────────────────────────────────────────────────────────────
 
 function resampleToWeekly(bars: OhlcvBar[]): OhlcvBar[] {
@@ -478,6 +502,8 @@ export function TradingChart({
   earningsHistory = [],
   optionsSnapshot,
   insiderActivity,
+  sectorBars,
+  sectorEtf,
   height = 420,
 }: TradingChartProps) {
   // ── Refs ────────────────────────────────────────────────────────────────────
@@ -490,6 +516,7 @@ export function TradingChart({
   const stochRef          = useRef<HTMLDivElement>(null);
   const adxRef            = useRef<HTMLDivElement>(null);
   const volDeltaRef       = useRef<HTMLDivElement>(null);
+  const sectorRsRef       = useRef<HTMLDivElement>(null);
 
   const chartRef      = useRef<IChartApi | null>(null);
   const rsiChartRef   = useRef<IChartApi | null>(null);
@@ -499,6 +526,7 @@ export function TradingChart({
   const stochChartRef = useRef<IChartApi | null>(null);
   const adxChartRef   = useRef<IChartApi | null>(null);
   const vdChartRef    = useRef<IChartApi | null>(null);
+  const sectorRsChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlaySeriesRef = useRef<ISeriesApi<"Line">[]>([]);
   const baseMarkersRef = useRef<SeriesMarker<Time>[]>([]);
@@ -515,7 +543,7 @@ export function TradingChart({
   const [showSR, setShowSR]         = useState(true);
   const [showFib, setShowFib]       = useState(false);
   const [showGamma, setShowGamma]   = useState(true);
-  const [indicators, setIndicators] = useState<Set<Indicator>>(new Set(["RSI"]));
+  const [indicators, setIndicators] = useState<Set<Indicator>>(new Set(["RSI", "SectorRS"]));
   const [clickInfo, setClickInfo]   = useState<ClickInfo | null>(null);
   const [hoverOhlc, setHoverOhlc]   = useState<{
     open: number; high: number; low: number; close: number; date: string;
@@ -1070,6 +1098,36 @@ export function TradingChart({
     return () => { obs.disconnect(); chart.remove(); vdChartRef.current = null; };
   }, [indicators, getDisplayBarsCallback]);
 
+  // ── Sector RS sub-chart ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!indicators.has("SectorRS") || !sectorRsRef.current || !sectorBars?.length) return;
+    const db = getDisplayBarsCallback();
+    const { stock, sector } = computeRelativeStrength(db, sectorBars);
+    if (stock.length === 0) return;
+    if (sectorRsChartRef.current) { sectorRsChartRef.current.remove(); sectorRsChartRef.current = null; }
+    const chart = buildSubChart(sectorRsRef.current, 100);
+    sectorRsChartRef.current = chart;
+    chart.addSeries(LineSeries, {
+      color: rawColors.accent.teal,
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      title: ticker,
+    }).setData(stock);
+    chart.addSeries(LineSeries, {
+      color: "#6b7280",
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      title: sectorEtf ?? "Sector",
+    }).setData(sector);
+    chart.timeScale().fitContent();
+    const obs = new ResizeObserver(([e]) => { if (e) chart.applyOptions({ width: e.contentRect.width }); });
+    obs.observe(sectorRsRef.current!);
+    return () => { obs.disconnect(); chart.remove(); sectorRsChartRef.current = null; };
+  }, [indicators, getDisplayBarsCallback, sectorBars, sectorEtf, ticker]);
+
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (bars.length === 0) {
     return (
@@ -1086,6 +1144,7 @@ export function TradingChart({
   const isUp        = priceChange >= 0;
 
   const PRO_INDS: Indicator[] = ["ATR", "OBV", "Stoch", "ADX", "VolDelta"];
+  const hasSectorData = !!(sectorBars?.length);
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden">
@@ -1159,6 +1218,13 @@ export function TradingChart({
         {(["RSI", "MACD", "BB"] as Indicator[]).map((ind) => (
           <ToggleBtn key={ind} label={ind} active={indicators.has(ind)} onClick={() => toggleIndicator(ind)} />
         ))}
+        <ToggleBtn
+          label={sectorEtf ? `vs ${sectorEtf}` : "Sector RS"}
+          active={indicators.has("SectorRS")}
+          onClick={() => toggleIndicator("SectorRS")}
+          disabled={!hasSectorData}
+          title={!hasSectorData ? "No sector data available" : `Relative strength vs ${sectorEtf ?? "sector ETF"}`}
+        />
         {proMode && PRO_INDS.map((ind) => (
           <ToggleBtn key={ind} label={ind} active={indicators.has(ind)} onClick={() => toggleIndicator(ind)} />
         ))}
@@ -1216,6 +1282,17 @@ export function TradingChart({
 
       {proMode && indicators.has("VolDelta") && <SubPaneHeader label="Volume Delta" />}
       {proMode && indicators.has("VolDelta") && <div ref={volDeltaRef} className="w-full" />}
+
+      {indicators.has("SectorRS") && hasSectorData && (
+        <SubPaneHeader label={`Relative Strength — ${ticker} vs ${sectorEtf ?? "Sector ETF"} (base 100)`}>
+          <span className="rounded border border-border bg-elevated px-1.5 py-0.5 text-2xs text-text-muted">
+            <span style={{ color: rawColors.accent.teal }}>{ticker}</span>
+            <span className="mx-1 text-text-muted">·</span>
+            <span className="text-text-muted">{sectorEtf ?? "Sector"}</span>
+          </span>
+        </SubPaneHeader>
+      )}
+      {indicators.has("SectorRS") && hasSectorData && <div ref={sectorRsRef} className="w-full" />}
 
       {/* ── AI Chat placeholder ───────────────────────────────────────────── */}
       <div className="border-t border-border bg-panel/40 px-3 py-2.5">
