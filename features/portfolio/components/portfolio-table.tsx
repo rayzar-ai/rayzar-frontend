@@ -66,9 +66,13 @@ export function PortfolioTable({ initialPositions }: Props) {
 
   async function handleRemove(ticker: string) {
     setRemoving(ticker);
-    await apiClient.removePosition(ticker);
+    const res = await apiClient.removePosition(ticker);
     setRemoving(null);
-    startTransition(() => router.refresh());
+    if (res.success) {
+      startTransition(() => router.refresh());
+    } else {
+      console.error("Failed to remove position:", res.error?.message);
+    }
   }
 
   const totalPnl = initialPositions.reduce((sum, p) => sum + (p.pnl_value ?? 0), 0);

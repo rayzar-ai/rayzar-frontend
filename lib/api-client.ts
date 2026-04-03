@@ -740,9 +740,9 @@ class RayZarApiClient {
     const url = `${this.baseUrl}/api/v1/portfolio/${ticker.toUpperCase()}`;
     const res = await fetch(url, {
       method: "DELETE",
-      headers: { "X-API-Key": this.apiKey },
+      headers: this.headers(),
     });
-    return res.json();
+    return res.json() as Promise<ApiResponse<null>>;
   }
 
   async getAlerts(limit = 50): Promise<ApiResponse<ServerAlert[]>> {

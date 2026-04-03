@@ -67,7 +67,6 @@ function Toast({ alert, onDismiss }: { alert: TriggeredAlert; onDismiss: () => v
 
 export function AlertToastContainer() {
   const triggered = useAlertsStore((s) => s.triggered);
-  const markAllRead = useAlertsStore((s) => s.markAllRead);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   // Show only unread + not dismissed, max 3
@@ -76,8 +75,8 @@ export function AlertToastContainer() {
     .slice(0, 3);
 
   function dismiss(id: string) {
+    // Only hide this specific toast — don't mark all alerts as read
     setDismissed((prev) => new Set([...prev, id]));
-    markAllRead();
   }
 
   if (visible.length === 0) return null;
