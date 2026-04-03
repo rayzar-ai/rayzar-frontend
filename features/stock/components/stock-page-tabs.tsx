@@ -24,10 +24,11 @@ import {
   Lock,
 } from "lucide-react";
 import { AiChatPanel } from "./ai-chat-panel";
+import { DebatePanel } from "./debate-panel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = "chart" | "ai_chat" | "advanced";
+type Tab = "chart" | "ai_chat" | "debate" | "advanced";
 
 interface StockPageTabsProps {
   ticker: string;
@@ -165,8 +166,9 @@ function AdvancedTabPlaceholder({ ticker }: { ticker: string }) {
 
 const TABS: { id: Tab; label: string; badge?: string }[] = [
   { id: "chart",    label: "Chart" },
-  { id: "ai_chat",  label: "AI Chat", badge: "NEW" },
-  { id: "advanced", label: "Advanced", badge: "NEW" },
+  { id: "ai_chat",  label: "AI Chat" },
+  { id: "debate",   label: "Debate", badge: "NEW" },
+  { id: "advanced", label: "Advanced" },
 ];
 
 export function StockPageTabs({ ticker, chartContent, advancedContent }: StockPageTabsProps) {
@@ -219,6 +221,11 @@ export function StockPageTabs({ ticker, chartContent, advancedContent }: StockPa
             <div className="mx-auto max-w-2xl h-full flex flex-col">
               <AiChatPanel ticker={ticker} />
             </div>
+          </div>
+        )}
+        {activeTab === "debate" && (
+          <div className="h-full overflow-y-auto">
+            <DebatePanel ticker={ticker} />
           </div>
         )}
         {activeTab === "advanced" && (
