@@ -21,6 +21,7 @@ import { TradingChart } from "@/features/charts/components/trading-chart";
 import { WorkspaceLayout } from "@/features/workspace/workspace-layout";
 import { StockPageTabs } from "@/features/stock/components/stock-page-tabs";
 import { AdvancedTabContent } from "@/features/stock/components/advanced-tab-content";
+import { LivePrice } from "@/components/ui/live-price";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
 import { AnalystPanel } from "@/components/ui/analyst-panel";
@@ -731,16 +732,12 @@ export default async function StockPage({ params }: StockPageProps) {
 
           <h1 className="font-mono text-xl font-bold text-text-primary">{upper}</h1>
 
-          {currentPrice !== null && (
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-mono text-lg font-semibold text-text-primary">${currentPrice.toFixed(2)}</span>
-              {priceChange !== null && priceChangePct !== null && (
-                <span className="font-mono text-sm font-medium" style={{ color: isPositive ? "#10b981" : "#ef4444" }}>
-                  {isPositive ? "▲" : "▼"}{Math.abs(priceChange).toFixed(2)} ({isPositive ? "+" : ""}{priceChangePct.toFixed(2)}%)
-                </span>
-              )}
-            </div>
-          )}
+          <LivePrice
+            ticker={upper}
+            initialPrice={currentPrice}
+            initialChange={priceChange}
+            initialChangePct={priceChangePct}
+          />
 
           {signal && <SignalBadge signalClass={signal.signal_class} noTradeReason={signal.no_trade_reason} />}
           {features?.swing_candidate && (
