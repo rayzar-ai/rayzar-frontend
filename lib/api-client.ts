@@ -522,7 +522,11 @@ class RayZarApiClient {
       headers: this.headers(),
       body: JSON.stringify(body),
     });
-    return res.json() as Promise<ApiResponse<T>>;
+    try {
+      return await res.json() as ApiResponse<T>;
+    } catch {
+      throw new Error(`API error: ${res.status} ${res.statusText} — ${path}`);
+    }
   }
 
   private async get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<ApiResponse<T>> {

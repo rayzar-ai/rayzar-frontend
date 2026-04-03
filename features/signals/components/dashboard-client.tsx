@@ -113,7 +113,7 @@ export function DashboardClient({
       } else if (sortKey === "confidence") {
         cmp = a.confidence - b.confidence;
       } else if (sortKey === "regime") {
-        cmp = a.regime.localeCompare(b.regime);
+        cmp = (a.regime ?? "").localeCompare(b.regime ?? "");
       } else if (sortKey === "signal_date") {
         cmp = a.signal_date.localeCompare(b.signal_date);
       }
