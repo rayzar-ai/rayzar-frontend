@@ -25,15 +25,20 @@ import {
 } from "lucide-react";
 import { AiChatPanel } from "./ai-chat-panel";
 import { DebatePanel } from "./debate-panel";
+import { ScenarioPanel } from "./scenario-panel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = "chart" | "ai_chat" | "debate" | "advanced";
+type Tab = "chart" | "ai_chat" | "debate" | "scenarios" | "advanced";
 
 interface StockPageTabsProps {
   ticker: string;
   chartContent: React.ReactNode;
   advancedContent?: React.ReactNode;
+  currentPrice?: number | null;
+  signalClass?: string | null;
+  hv20d?: number | null;
+  atr14Pct?: number | null;
 }
 
 // ── Advanced tab placeholder ─────────────────────────────────────────────────
@@ -165,13 +170,22 @@ function AdvancedTabPlaceholder({ ticker }: { ticker: string }) {
 // ── Tab bar + switcher ────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; badge?: string }[] = [
-  { id: "chart",    label: "Chart" },
-  { id: "ai_chat",  label: "AI Chat" },
-  { id: "debate",   label: "Debate", badge: "NEW" },
-  { id: "advanced", label: "Advanced" },
+  { id: "chart",     label: "Chart" },
+  { id: "ai_chat",   label: "AI Chat" },
+  { id: "debate",    label: "Debate",    badge: "NEW" },
+  { id: "scenarios", label: "Scenarios", badge: "NEW" },
+  { id: "advanced",  label: "Advanced" },
 ];
 
-export function StockPageTabs({ ticker, chartContent, advancedContent }: StockPageTabsProps) {
+export function StockPageTabs({
+  ticker,
+  chartContent,
+  advancedContent,
+  currentPrice,
+  signalClass,
+  hv20d,
+  atr14Pct,
+}: StockPageTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("chart");
 
   return (
@@ -227,6 +241,15 @@ export function StockPageTabs({ ticker, chartContent, advancedContent }: StockPa
           <div className="h-full overflow-y-auto">
             <DebatePanel ticker={ticker} />
           </div>
+        )}
+        {activeTab === "scenarios" && (
+          <ScenarioPanel
+            ticker={ticker}
+            currentPrice={currentPrice}
+            signalClass={signalClass}
+            hv20d={hv20d}
+            atr14Pct={atr14Pct}
+          />
         )}
         {activeTab === "advanced" && (
           advancedContent ?? <AdvancedTabPlaceholder ticker={ticker} />

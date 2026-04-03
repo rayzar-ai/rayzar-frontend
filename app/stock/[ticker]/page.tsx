@@ -782,6 +782,10 @@ export default async function StockPage({ params }: StockPageProps) {
           />
         }
         advancedContent={paneAdvanced}
+        currentPrice={currentPrice}
+        signalClass={signal?.signal_class ?? null}
+        hv20d={features?.hv_20d ?? null}
+        atr14Pct={features?.atr14_pct ?? null}
       />
 
       {/* ── Disclaimer ────────────────────────────────────────────────────── */}
