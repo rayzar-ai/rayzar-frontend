@@ -41,9 +41,9 @@ export function LivePrice({
     initialChangePct,
   );
 
-  const displayPrice     = price      ?? initialPrice;
-  const displayChange    = change     ?? initialChange;
-  const displayChangePct = changePct  ?? initialChangePct;
+  const displayPrice:     number | null = price      ?? initialPrice      ?? null;
+  const displayChange:    number | null = change     ?? initialChange     ?? null;
+  const displayChangePct: number | null = changePct  ?? initialChangePct  ?? null;
 
   const isPositive = displayChange !== null ? displayChange >= 0 : null;
   const priceColor =

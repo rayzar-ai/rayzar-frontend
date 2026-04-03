@@ -298,7 +298,7 @@ export function ScenarioPanel({
   const [error, setError] = useState<string | null>(null);
 
   const run = useCallback(async () => {
-    if (!currentPrice) return;
+    if (currentPrice == null) return;
     setLoading(true);
     setError(null);
 
@@ -336,7 +336,7 @@ export function ScenarioPanel({
   }, [ticker, currentPrice, signalClass, hv20d, atr14Pct]);
 
   // ── Empty / no price state ────────────────────────────────────────────────
-  if (!currentPrice) {
+  if (currentPrice == null) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted text-sm">
         No price data available for {ticker}

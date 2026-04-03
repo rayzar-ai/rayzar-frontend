@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
-import type { Signal, SearchResult } from "@/lib/api-client";
+import type { Signal } from "@/lib/api-client";
 import { cn, signalBgColour } from "@/lib/utils";
 
 const SIGNAL_LABELS: Record<Signal["signal_class"], string> = {
