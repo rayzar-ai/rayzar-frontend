@@ -379,7 +379,7 @@ export function DebatePanel({ ticker }: DebatePanelProps) {
     abortRef.current = new AbortController();
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
       const apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
 
       const res = await fetch(`${apiUrl}/api/v1/debate/${ticker}`, {

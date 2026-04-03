@@ -303,7 +303,7 @@ export function ScenarioPanel({
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
       const apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
 
       const params = new URLSearchParams();

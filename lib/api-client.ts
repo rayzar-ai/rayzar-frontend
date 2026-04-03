@@ -503,9 +503,9 @@ class RayZarApiClient {
   private readonly apiKey: string;
 
   constructor() {
-    this.baseUrl = (
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-    ).replace(/\/$/, "");
+    // Empty string → relative URLs → Next.js rewrites proxy to EC2 (production)
+    // Full URL → direct fetch (development with NEXT_PUBLIC_API_URL set)
+    this.baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
   }
 
@@ -515,9 +515,33 @@ class RayZarApiClient {
     return h;
   }
 
-  private async post<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  /**
+   * Build a URL string. When baseUrl is empty (production with rewrites),
+   * returns a relative path that the browser fetches against the Vercel origin.
+   * When baseUrl is set (local dev), returns a full absolute URL.
+   */
+  private buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
+    const filteredEntries = params
+      ? (Object.entries(params).filter(([, v]) => v !== undefined) as [string, string | number][])
+      : [];
+
+    if (!this.baseUrl) {
+      // Relative URL — Vercel rewrites intercept and proxy to EC2
+      if (filteredEntries.length === 0) return path;
+      const qs = filteredEntries
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .join("&");
+      return `${path}?${qs}`;
+    }
+
     const url = new URL(`${this.baseUrl}${path}`);
-    const res = await fetch(url.toString(), {
+    filteredEntries.forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    return url.toString();
+  }
+
+  private async post<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+    const url = this.buildUrl(path);
+    const res = await fetch(url, {
       method: "POST",
       headers: this.headers(),
       body: JSON.stringify(body),
@@ -530,14 +554,9 @@ class RayZarApiClient {
   }
 
   private async get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<ApiResponse<T>> {
-    const url = new URL(`${this.baseUrl}${path}`);
-    if (params) {
-      for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined) url.searchParams.set(k, String(v));
-      }
-    }
+    const url = this.buildUrl(path, params);
 
-    const res = await fetch(url.toString(), {
+    const res = await fetch(url, {
       headers: this.headers(),
       cache: "no-store",
     });
@@ -607,8 +626,8 @@ class RayZarApiClient {
   }
 
   async addToWatchlist(ticker: string, asset_class = "stocks"): Promise<ApiResponse<WatchlistItem>> {
-    const url = new URL(`${this.baseUrl}/api/v1/watchlist`);
-    const res = await fetch(url.toString(), {
+    const url = this.buildUrl("/api/v1/watchlist");
+    const res = await fetch(url, {
       method: "POST",
       headers: this.headers(),
       body: JSON.stringify({ ticker, asset_class }),
@@ -623,8 +642,8 @@ class RayZarApiClient {
   }
 
   async removeFromWatchlist(ticker: string): Promise<ApiResponse<null>> {
-    const url = new URL(`${this.baseUrl}/api/v1/watchlist/${encodeURIComponent(ticker.toUpperCase())}`);
-    const res = await fetch(url.toString(), {
+    const url = this.buildUrl(`/api/v1/watchlist/${encodeURIComponent(ticker.toUpperCase())}`);
+    const res = await fetch(url, {
       method: "DELETE",
       headers: this.headers(),
     });
@@ -723,8 +742,8 @@ class RayZarApiClient {
   // ── Ideas Endpoints ───────────────────────────────────────────────────────
 
   async createIdea(body: CreateIdeaRequest): Promise<ApiResponse<TradingIdea>> {
-    const url = new URL(`${this.baseUrl}/api/v1/ideas`);
-    const res = await fetch(url.toString(), {
+    const url = this.buildUrl("/api/v1/ideas");
+    const res = await fetch(url, {
       method: "POST",
       headers: this.headers(),
       body: JSON.stringify(body),
@@ -741,7 +760,7 @@ class RayZarApiClient {
   }
 
   async removePosition(ticker: string): Promise<ApiResponse<null>> {
-    const url = `${this.baseUrl}/api/v1/portfolio/${ticker.toUpperCase()}`;
+    const url = this.buildUrl(`/api/v1/portfolio/${ticker.toUpperCase()}`);
     const res = await fetch(url, {
       method: "DELETE",
       headers: this.headers(),

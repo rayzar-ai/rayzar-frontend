@@ -45,8 +45,13 @@ const INITIAL_STATE: PriceData = {
 const MAX_BACKOFF_MS = 30_000;
 const BASE_BACKOFF_MS = 1_000;
 
-function getWsUrl(ticker: string): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+function getWsUrl(ticker: string): string | null {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+  // WebSocket requires an explicit host — relative URLs don't work with WS protocol.
+  // If no API URL is configured, degrade gracefully (no live streaming).
+  if (!apiUrl || (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://"))) {
+    return null;
+  }
   const apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
   const wsBase = apiUrl
     .replace(/^https:\/\//, "wss://")
@@ -93,10 +98,16 @@ export function usePriceStream(
   const connect = useCallback((t: string) => {
     if (!mountedRef.current) return;
 
+    const url = getWsUrl(t);
+    if (!url) {
+      // No explicit backend URL configured — WebSocket disabled, show static price only
+      setData((prev) => ({ ...prev, isConnecting: false, isLive: false }));
+      return;
+    }
+
     closeWs();
     setData((prev) => ({ ...prev, isConnecting: true, isLive: false }));
 
-    const url = getWsUrl(t);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
