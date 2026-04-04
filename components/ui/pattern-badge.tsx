@@ -92,7 +92,7 @@ export function PatternBadge({
       >
         <Icon className="h-3 w-3" />
         <span className="max-w-[96px] truncate">{name}</span>
-        <span style={{ opacity: 0.7 }}>{pct}%</span>
+        <span style={{ opacity: 0.7 }}>{timeframe === "1d" ? "D" : timeframe === "1w" ? "W" : timeframe === "1m" ? "M" : timeframe} · {pct}%</span>
       </span>
     );
   }
@@ -124,7 +124,16 @@ export function PatternBadge({
           >
             {name}
           </p>
-          <p className="mt-0.5 font-mono text-2xs text-text-muted">{timeframe}</p>
+          <span
+            className="mt-1 inline-block rounded px-1.5 py-0.5 font-mono text-2xs font-bold"
+            style={{
+              background: `${colors.fill}20`,
+              color: colors.fill,
+              border: `1px solid ${colors.fill}40`,
+            }}
+          >
+            {timeframe === "1d" ? "Daily" : timeframe === "1w" ? "Weekly" : timeframe === "1m" ? "Monthly" : timeframe === "4h" ? "4H" : timeframe}
+          </span>
         </div>
       </div>
 
