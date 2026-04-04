@@ -16,6 +16,31 @@ interface SignalsTableProps {
   currentPage: number;
 }
 
+// Tier order — most bullish → most bearish
+const TIER_ORDER: Signal["signal_class"][] = [
+  "STRONG_LONG",
+  "LONG",
+  "NEUTRAL",
+  "SHORT",
+  "STRONG_SHORT",
+];
+
+const TIER_LABELS: Record<string, string> = {
+  STRONG_LONG:  "Strong Long",
+  LONG:         "Long",
+  NEUTRAL:      "Neutral",
+  SHORT:        "Short",
+  STRONG_SHORT: "Strong Short",
+};
+
+const TIER_COLORS: Record<string, { header: string; rank: string; border: string }> = {
+  STRONG_LONG:  { header: "bg-teal-500/10 text-teal-400",   rank: "text-teal-400",   border: "border-teal-500/20" },
+  LONG:         { header: "bg-teal-500/6  text-teal-500/80", rank: "text-teal-500/70", border: "border-teal-500/10" },
+  NEUTRAL:      { header: "bg-panel/60   text-text-muted",   rank: "text-text-muted",  border: "border-border/40"  },
+  SHORT:        { header: "bg-red-500/6  text-red-400/80",   rank: "text-red-400/70",  border: "border-red-500/10" },
+  STRONG_SHORT: { header: "bg-red-500/10 text-red-400",      rank: "text-red-400",     border: "border-red-500/20" },
+};
+
 export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,13 +66,27 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
     );
   }
 
+  // ── Group by tier, preserve backend sort order within each tier ──────
+  const grouped = new Map<string, Signal[]>();
+  for (const tier of TIER_ORDER) grouped.set(tier, []);
+  for (const s of signals) {
+    const tier = s.signal_class ?? "NEUTRAL";
+    if (!grouped.has(tier)) grouped.set(tier, []);
+    grouped.get(tier)!.push(s);
+  }
+
+  // Only render tiers that have signals
+  const activeTiers = TIER_ORDER.filter((t) => (grouped.get(t)?.length ?? 0) > 0);
+
   return (
     <div className="space-y-4">
+
       {/* ── Desktop table ─────────────────────────────────────────────── */}
       <div className="hidden overflow-hidden rounded-lg border border-border md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-panel/60 text-left text-xs uppercase tracking-wider text-text-secondary">
+              <th className="w-10 px-3 py-3 text-center">#</th>
               <th className="px-4 py-3">Ticker</th>
               <th className="px-4 py-3">Signal</th>
               <th className="px-4 py-3">Confidence</th>
@@ -57,103 +96,139 @@ export function SignalsTable({ signals, meta, currentPage }: SignalsTableProps) 
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
-            {signals.map((signal) => (
-              <tr
-                key={signal.id}
-                className="group transition-colors hover:bg-elevated/40"
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <Link
-                      href={`/stock/${signal.ticker}`}
-                      className="font-mono font-semibold text-text-heading hover:text-signal-long"
+          <tbody>
+            {activeTiers.map((tier) => {
+              const tierSignals = grouped.get(tier)!;
+              const colors = TIER_COLORS[tier] ?? TIER_COLORS.NEUTRAL;
+              return (
+                <>
+                  {/* Tier header row */}
+                  <tr key={`header-${tier}`} className={`border-y ${colors.border}`}>
+                    <td colSpan={8} className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest ${colors.header}`}>
+                      {TIER_LABELS[tier]} · {tierSignals.length}
+                    </td>
+                  </tr>
+                  {/* Signal rows */}
+                  {tierSignals.map((signal, idx) => (
+                    <tr
+                      key={signal.id}
+                      className="group divide-x divide-border/20 transition-colors hover:bg-elevated/40 border-b border-border/40 last:border-0"
                     >
-                      {signal.ticker}
-                    </Link>
-                    {(() => {
-                      const fc = parseFeatureContext(signal.features_used);
-                      return (
-                        <>
-                          {fc?.earnings_proximity_flag && (
-                            <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400 cursor-default">⚠️</span>
-                          )}
-                          {fc?.swing_candidate && (
-                            <span title="Swing candidate" className="text-xs text-purple-400 cursor-default">↔</span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <SignalBadge signalClass={signal.signal_class} />
-                </td>
-                <td className="px-4 py-3 text-text-secondary">
-                  {formatConfidence(signal.confidence)}
-                </td>
-                <td className="px-4 py-3">
-                  <RayzarScore score={signal.rayzar_score} size="sm" />
-                </td>
-                <td className="px-4 py-3">
-                  <RegimeBadge regime={signal.regime} />
-                </td>
-                <td className="px-4 py-3 text-text-muted">
-                  {formatDate(signal.signal_date)}
-                </td>
-                <td className="px-4 py-3">
-                  <WatchButton ticker={signal.ticker} />
-                </td>
-              </tr>
-            ))}
+                      <td className={`w-10 px-3 py-3 text-center font-mono text-xs font-bold ${colors.rank}`}>
+                        {idx + 1}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/stock/${signal.ticker}`}
+                            className="font-mono font-semibold text-text-heading hover:text-signal-long"
+                          >
+                            {signal.ticker}
+                          </Link>
+                          {(() => {
+                            const fc = parseFeatureContext(signal.features_used);
+                            return (
+                              <>
+                                {fc?.earnings_proximity_flag && (
+                                  <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400 cursor-default">⚠️</span>
+                                )}
+                                {fc?.swing_candidate && (
+                                  <span title="Swing candidate" className="text-xs text-purple-400 cursor-default">↔</span>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <SignalBadge signalClass={signal.signal_class} />
+                      </td>
+                      <td className="px-4 py-3 text-text-secondary">
+                        {formatConfidence(signal.confidence)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <RayzarScore score={signal.rayzar_score} size="sm" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <RegimeBadge regime={signal.regime} />
+                      </td>
+                      <td className="px-4 py-3 text-text-muted">
+                        {formatDate(signal.signal_date)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <WatchButton ticker={signal.ticker} />
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* ── Mobile cards ──────────────────────────────────────────────── */}
-      <div className="space-y-2 md:hidden">
-        {signals.map((signal) => (
-          <Link
-            key={signal.id}
-            href={`/stock/${signal.ticker}`}
-            className="block rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-focus/50"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-bold text-text-heading">{signal.ticker}</span>
-                  {(() => {
-                    const fc = parseFeatureContext(signal.features_used);
-                    return (
-                      <>
-                        {fc?.earnings_proximity_flag && (
-                          <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400">⚠️</span>
-                        )}
-                        {fc?.swing_candidate && (
-                          <span title="Swing candidate" className="text-xs text-purple-400">↔</span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="mt-1">
-                  <SignalBadge signalClass={signal.signal_class} />
-                </div>
+      <div className="space-y-3 md:hidden">
+        {activeTiers.map((tier) => {
+          const tierSignals = grouped.get(tier)!;
+          const colors = TIER_COLORS[tier] ?? TIER_COLORS.NEUTRAL;
+          return (
+            <div key={`mobile-${tier}`}>
+              {/* Tier header */}
+              <div className={`mb-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-widest ${colors.header}`}>
+                {TIER_LABELS[tier]} · {tierSignals.length}
               </div>
-              <div className="text-right">
-                <p className="text-xs text-text-muted">RayZar Score</p>
-                <RayzarScore score={signal.rayzar_score} size="lg" />
+              {/* Signal cards */}
+              <div className="space-y-2">
+                {tierSignals.map((signal, idx) => (
+                  <Link
+                    key={signal.id}
+                    href={`/stock/${signal.ticker}`}
+                    className="block rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-focus/50"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-0.5 font-mono text-xs font-bold ${colors.rank}`}>#{idx + 1}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-text-heading">{signal.ticker}</span>
+                            {(() => {
+                              const fc = parseFeatureContext(signal.features_used);
+                              return (
+                                <>
+                                  {fc?.earnings_proximity_flag && (
+                                    <span title={`Earnings in ${fc.days_to_earnings ?? "<14"} days`} className="text-xs text-amber-400">⚠️</span>
+                                  )}
+                                  {fc?.swing_candidate && (
+                                    <span title="Swing candidate" className="text-xs text-purple-400">↔</span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                          <div className="mt-1">
+                            <SignalBadge signalClass={signal.signal_class} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-text-muted">RayZar Score</p>
+                        <RayzarScore score={signal.rayzar_score} size="lg" />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 text-xs text-text-muted">
+                      <span>Confidence: {formatConfidence(signal.confidence)}</span>
+                      <span>·</span>
+                      <RegimeBadge regime={signal.regime} />
+                      <span>·</span>
+                      <span>{formatDate(signal.signal_date)}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs text-text-muted">
-              <span>Confidence: {formatConfidence(signal.confidence)}</span>
-              <span>·</span>
-              <RegimeBadge regime={signal.regime} />
-              <span>·</span>
-              <span>{formatDate(signal.signal_date)}</span>
-            </div>
-          </Link>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── Pagination ────────────────────────────────────────────────── */}
