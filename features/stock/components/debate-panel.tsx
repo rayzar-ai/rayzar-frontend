@@ -224,7 +224,7 @@ function JudgePanel({ verdict, loading }: { verdict: Verdict | null; loading: bo
             <Gavel className="h-4.5 w-4.5" style={{ color: style.color }} />
           </div>
           <div>
-            <div className="text-xs text-text-muted font-medium uppercase tracking-wider">Judge's Verdict</div>
+            <div className="text-xs text-text-muted font-medium uppercase tracking-wider">Judge&apos;s Verdict</div>
             <div className="text-lg font-bold font-mono" style={{ color: style.color }}>
               {style.label}
             </div>
@@ -620,7 +620,7 @@ export function DebatePanel({ ticker }: DebatePanelProps) {
               3
             </div>
             <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Judge's Verdict
+              Judge&apos;s Verdict
             </span>
           </div>
           <JudgePanel verdict={state.verdict} loading={isRunning && !state.verdict} />

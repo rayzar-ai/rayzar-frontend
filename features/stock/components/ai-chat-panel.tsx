@@ -9,7 +9,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, Lightbulb } from "lucide-react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 
