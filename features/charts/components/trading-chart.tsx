@@ -22,6 +22,7 @@ import {
   LineStyle,
   type IChartApi,
   type ISeriesApi,
+  type IPriceLine,
   type CandlestickData,
   type Time,
   type HistogramData,
@@ -529,6 +530,7 @@ export function TradingChart({
   const sectorRsChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlaySeriesRef = useRef<ISeriesApi<"Line">[]>([]);
+  const overlayPriceLinesRef = useRef<IPriceLine[]>([]);
   const baseMarkersRef = useRef<SeriesMarker<Time>[]>([]);
 
   // ── Store ────────────────────────────────────────────────────────────────────
@@ -700,40 +702,7 @@ export function TradingChart({
       }
     }
 
-    // TA pattern price lines — opacity + line style reflect confidence:
-    //   ≥0.90 → solid,  0.70–0.89 → dashed,  <0.70 → sparse-dashed (Dotted)
-    if (taAnalysis?.signals) {
-      for (const sig of taAnalysis.signals) {
-        if (!sig.key_levels) continue;
-        const conf = sig.confidence ?? 0.5;
-        const baseColor = sig.direction === "bullish"
-          ? rawColors.chart.patternBull
-          : sig.direction === "bearish"
-          ? rawColors.chart.patternBear
-          : rawColors.chart.patternNeutral;
-        // Derive rgba with opacity by confidence tier
-        const opacity = conf >= 0.90 ? 0.85 : conf >= 0.70 ? 0.55 : 0.30;
-        // Convert base hex to rgba (base colors are hex strings)
-        const hex = baseColor.replace("#", "");
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-        const color = `rgba(${r},${g},${b},${opacity})`;
-        const lineStyle = conf >= 0.90
-          ? LineStyle.Solid
-          : conf >= 0.70
-          ? LineStyle.Dashed
-          : LineStyle.LargeDashed;
-        for (const [levelName, price] of Object.entries(sig.key_levels)) {
-          if (typeof price !== "number") continue;
-          candleSeries.createPriceLine({
-            price, color, lineWidth: 1, lineStyle,
-            axisLabelVisible: true,
-            title: `${sig.name} (${levelName}) ${Math.round(conf * 100)}%`,
-          });
-        }
-      }
-    }
+    // TA pattern price lines are shown only when a badge is clicked (see overlay effect below)
 
     // Markers: earnings + insider + prediction arrow
     const markers: SeriesMarker<Time>[] = [];
@@ -928,6 +897,12 @@ export function TradingChart({
     }
     overlaySeriesRef.current = [];
 
+    // Remove previous overlay price lines
+    for (const pl of overlayPriceLinesRef.current) {
+      try { candleSeries?.removePriceLine(pl); } catch { /* already removed */ }
+    }
+    overlayPriceLinesRef.current = [];
+
     // Use amber for pattern overlays (structural, not directional)
     const color = "#f59e0b";
 
@@ -974,7 +949,34 @@ export function TradingChart({
         overlaySeriesRef.current.push(s);
       }
     }
-  }, [activePatternOverlay]);
+
+    // Show key levels (target / neckline / breakout) for the active pattern only
+    const activeSig = taAnalysis?.signals?.find((s) => s.name === activePatternOverlay.type);
+    if (activeSig?.key_levels) {
+      // Short label map — only the most useful levels
+      const LABEL_MAP: Record<string, string> = {
+        target: "Target", neckline: "Neckline", breakout: "Breakout",
+        cup_rim: "Rim", stop: "Stop", pole_end: "Pole End",
+      };
+      for (const [levelName, price] of Object.entries(activeSig.key_levels)) {
+        if (typeof price !== "number") continue;
+        const label = LABEL_MAP[levelName];
+        if (!label) continue; // skip minor levels (cup_bottom, handle_low, etc.)
+        const isTarget = levelName === "target";
+        const isStop = levelName === "stop";
+        const lineColor = isTarget ? "rgba(245,158,11,0.9)" : isStop ? "rgba(239,68,68,0.7)" : "rgba(245,158,11,0.6)";
+        const pl = candleSeries.createPriceLine({
+          price,
+          color: lineColor,
+          lineWidth: 1,
+          lineStyle: isStop ? LineStyle.Dashed : LineStyle.Solid,
+          axisLabelVisible: true,
+          title: label,
+        });
+        overlayPriceLinesRef.current.push(pl);
+      }
+    }
+  }, [activePatternOverlay, taAnalysis]);
 
   // ── RSI sub-chart ───────────────────────────────────────────────────────────
   useEffect(() => {
