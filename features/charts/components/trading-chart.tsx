@@ -531,6 +531,7 @@ export function TradingChart({
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlaySeriesRef = useRef<ISeriesApi<"Line">[]>([]);
   const overlayPriceLinesRef = useRef<IPriceLine[]>([]);
+  const backgroundSeriesRef = useRef<ISeriesApi<"Line">[]>([]); // EMA/SMA/VWAP — hidden during pattern overlay
   const baseMarkersRef = useRef<SeriesMarker<Time>[]>([]);
 
   // ── Store ────────────────────────────────────────────────────────────────────
@@ -626,15 +627,20 @@ export function TradingChart({
       };
     }));
 
+    // Reset background series list on chart rebuild
+    backgroundSeriesRef.current = [];
+
     // EMA 21/50
     if (showEma) {
       if (displayBars.length >= 21) {
         const s = chart.addSeries(LineSeries, { color: rawColors.accent.teal, lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: "EMA21" });
         s.setData(computeEma(displayBars, 21));
+        backgroundSeriesRef.current.push(s);
       }
       if (displayBars.length >= 50) {
         const s = chart.addSeries(LineSeries, { color: rawColors.accent.amber, lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: "EMA50" });
         s.setData(computeEma(displayBars, 50));
+        backgroundSeriesRef.current.push(s);
       }
     }
 
@@ -642,6 +648,7 @@ export function TradingChart({
     if (showSma200 && displayBars.length >= 200) {
       const s = chart.addSeries(LineSeries, { color: rawColors.chart.sma200, lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "SMA200" });
       s.setData(computeSma(displayBars, 200));
+      backgroundSeriesRef.current.push(s);
     }
 
     // VWAP (Simple: intraday views; Pro: + bands)
@@ -650,13 +657,16 @@ export function TradingChart({
         const { vwap, upper1, lower1, upper2, lower2 } = computeVwapBands(displayBars);
         const vs = chart.addSeries(LineSeries, { color: "rgba(245,158,11,0.9)", lineWidth: 2, lineStyle: LineStyle.Solid, priceLineVisible: false, lastValueVisible: true, title: "VWAP" });
         vs.setData(vwap);
+        backgroundSeriesRef.current.push(vs);
         for (const [data, dash] of [[upper1, LineStyle.Dashed], [lower1, LineStyle.Dashed], [upper2, LineStyle.Dotted], [lower2, LineStyle.Dotted]] as [LineData[], LineStyle][]) {
           const s = chart.addSeries(LineSeries, { color: "rgba(245,158,11,0.35)", lineWidth: 1, lineStyle: dash, priceLineVisible: false, lastValueVisible: false });
           s.setData(data);
+          backgroundSeriesRef.current.push(s);
         }
       } else {
         const s = chart.addSeries(LineSeries, { color: "rgba(245,158,11,0.85)", lineWidth: 2, lineStyle: LineStyle.Dashed, priceLineVisible: false, lastValueVisible: true, title: "VWAP" });
         s.setData(computeVwap(displayBars));
+        backgroundSeriesRef.current.push(s);
       }
     }
 
@@ -907,9 +917,17 @@ export function TradingChart({
     const color = "#f59e0b";
 
     if (!chart || !candleSeries || !activePatternOverlay) {
-      // Overlay cleared — restore base markers only
+      // Overlay cleared — restore base markers and background series
       if (candleSeries) createSeriesMarkers(candleSeries, baseMarkersRef.current);
+      for (const s of backgroundSeriesRef.current) {
+        try { s.applyOptions({ visible: true }); } catch { /* series removed */ }
+      }
       return;
+    }
+
+    // Hide EMA/SMA/VWAP lines so only the pattern overlay is visible
+    for (const s of backgroundSeriesRef.current) {
+      try { s.applyOptions({ visible: false }); } catch { /* series removed */ }
     }
 
     // Merge pivot markers with existing earnings/signal markers
