@@ -956,7 +956,7 @@ export function TradingChart({
           lineWidth: 1,
           lineStyle: tl.style === "dashed" ? LineStyle.Dashed : LineStyle.Solid,
           priceLineVisible: false,
-          lastValueVisible: true,
+          lastValueVisible: false,
           crosshairMarkerVisible: false,
           title: "",
         });
