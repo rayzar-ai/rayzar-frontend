@@ -19,6 +19,8 @@ interface PatternBadgeProps {
   timeframe: string;
   compact?: boolean;
   className?: string;
+  onClick?: () => void;
+  isActive?: boolean;
 }
 
 function getPatternIcon(name: string): LucideIcon {
@@ -71,6 +73,8 @@ export function PatternBadge({
   timeframe,
   compact = false,
   className,
+  onClick,
+  isActive = false,
 }: PatternBadgeProps) {
   const Icon = getPatternIcon(name);
   const colors = directionColors(direction);
@@ -98,16 +102,22 @@ export function PatternBadge({
   }
 
   // ── Full card ────────────────────────────────────────────────────────────
+  const Tag = onClick ? "button" : "div";
   return (
-    <div
+    <Tag
       className={cn(
-        "flex min-w-[140px] flex-col gap-2 rounded-lg border p-3 transition-all hover:shadow-sm",
+        "flex min-w-[140px] flex-col gap-2 rounded-lg border p-3 transition-all hover:shadow-sm text-left",
+        onClick && "cursor-pointer hover:ring-1",
+        isActive && "ring-1",
         className
       )}
       style={{
         background: colors.bg,
-        borderColor: colors.border,
+        borderColor: isActive ? colors.fill : colors.border,
+        // @ts-expect-error -- ringColor not in React.CSSProperties
+        "--tw-ring-color": colors.fill,
       }}
+      {...(onClick ? { onClick } : {})}
     >
       {/* Icon + name row */}
       <div className="flex items-start gap-2">
@@ -167,6 +177,6 @@ export function PatternBadge({
       >
         {direction}
       </span>
-    </div>
+    </Tag>
   );
 }

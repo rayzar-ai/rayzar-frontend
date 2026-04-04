@@ -26,6 +26,7 @@ import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
 import { AnalystPanel } from "@/components/ui/analyst-panel";
 import { PatternBadge } from "@/components/ui/pattern-badge";
+import { PatternBadgesClient } from "@/components/ui/pattern-badges-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
 import { WatchButton } from "@/components/ui/watch-button";
@@ -137,16 +138,17 @@ function getRegimeType(label: string | null): "bull" | "bear" | "neutral" | "rec
 function buildPatternBadges(
   taSignals: TASignalItem[],
   features: ReturnType<typeof parseFeatureContext>
-): { name: string; direction: "bullish" | "bearish" | "neutral"; confidence: number; timeframe: string }[] {
-  const patterns: { name: string; direction: "bullish" | "bearish" | "neutral"; confidence: number; timeframe: string }[] = [];
+): { name: string; direction: "bullish" | "bearish" | "neutral"; confidence: number; timeframe: string; overlay?: TASignalItem["overlay"] }[] {
+  const patterns: { name: string; direction: "bullish" | "bearish" | "neutral"; confidence: number; timeframe: string; overlay?: TASignalItem["overlay"] }[] = [];
 
-  // From TA analysis signals (first 3 that look like patterns)
+  // From TA analysis signals — keep overlay so badge click can show chart overlay
   for (const sig of taSignals.slice(0, 5)) {
     patterns.push({
       name: sig.name,
       direction: sig.direction,
       confidence: sig.confidence,
       timeframe: sig.timeframe,
+      overlay: sig.overlay ?? undefined,
     });
     if (patterns.length >= 4) break;
   }
@@ -525,20 +527,7 @@ export default async function StockPage({ params }: StockPageProps) {
   const paneData = (
     <>
       {patternBadges.length > 0 && (
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Detected Patterns</h2>
-            <span className="text-2xs text-text-muted italic">Contextual — not used as primary signal</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {patternBadges.map((p, i) => (
-              <PatternBadge key={`${p.name}-${i}`} name={p.name} direction={p.direction} confidence={p.confidence} timeframe={p.timeframe} />
-            ))}
-          </div>
-          <p className="mt-2 text-2xs text-text-muted leading-relaxed">
-            Pattern confidence reflects detection quality, not predictive accuracy. Use alongside ML signal and TA alignment — not in isolation.
-          </p>
-        </div>
+        <PatternBadgesClient patterns={patternBadges} />
       )}
 
       {fundamentals && (
