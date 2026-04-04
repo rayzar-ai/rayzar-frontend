@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
    * Client code uses relative paths (baseUrl = "") — rewrites intercept on the server.
    */
   async rewrites() {
-    const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:8000").replace(/\/$/, "");
+    // BACKEND_URL overrides the default EC2 address (set in Vercel env vars to change).
+    // Falls back to the known EC2 address so rewrites work without any env var configured.
+    const backendUrl = (process.env.BACKEND_URL ?? "http://54.159.27.188:8000").replace(/\/$/, "");
     return [
       {
         source: "/api/v1/:path*",
