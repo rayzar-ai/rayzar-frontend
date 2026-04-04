@@ -677,7 +677,7 @@ export function TradingChart({
       const support = srLevels.filter((l) => l <= currentPrice).slice(-3);       // highest 3 below price
       for (const level of [...resistance, ...support]) {
         const isRes = level > currentPrice;
-        candleSeries.createPriceLine({ price: level, color: isRes ? "rgba(239,68,68,0.5)" : "rgba(16,185,129,0.5)", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: isRes ? "R" : "S" });
+        candleSeries.createPriceLine({ price: level, color: isRes ? "rgba(239,68,68,0.5)" : "rgba(16,185,129,0.5)", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: "" });
       }
     }
 
