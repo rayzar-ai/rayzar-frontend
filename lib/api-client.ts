@@ -503,9 +503,21 @@ class RayZarApiClient {
   private readonly apiKey: string;
 
   constructor() {
-    // Empty string → relative URLs → Next.js rewrites proxy to EC2 (production)
-    // Full URL → direct fetch (development with NEXT_PUBLIC_API_URL set)
-    this.baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+    if (typeof window === "undefined") {
+      // Server-side (Next.js SSR / Server Components):
+      // Use BACKEND_URL (server-only env var) to call EC2 directly.
+      // Falls back to NEXT_PUBLIC_API_URL if set, then EC2 address.
+      this.baseUrl = (
+        process.env.BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "http://54.159.27.188:8000"
+      ).replace(/\/$/, "");
+    } else {
+      // Client-side (browser):
+      // Empty string → relative paths → Next.js rewrites proxy to EC2.
+      // NEXT_PUBLIC_API_URL only used if explicitly set (local dev).
+      this.baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+    }
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY ?? "";
   }
 
