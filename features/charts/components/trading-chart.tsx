@@ -956,9 +956,9 @@ export function TradingChart({
           lineWidth: 1,
           lineStyle: tl.style === "dashed" ? LineStyle.Dashed : LineStyle.Solid,
           priceLineVisible: false,
-          lastValueVisible: false,
+          lastValueVisible: true,
           crosshairMarkerVisible: false,
-          title: tl.label ?? "",
+          title: "",
         });
         s.setData([
           { time: tl.p1.date as Time, value: tl.p1.price },
