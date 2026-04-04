@@ -142,13 +142,19 @@ function buildPatternBadges(
   const patterns: { name: string; direction: "bullish" | "bearish" | "neutral"; confidence: number; timeframe: string; overlay?: TASignalItem["overlay"] }[] = [];
 
   // From TA analysis signals — keep overlay so badge click can show chart overlay
+  // Only include overlay if its points are within the last 3 years (otherwise chart won't show them)
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 3);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
   for (const sig of taSignals.slice(0, 5)) {
+    const overlayIsRecent = sig.overlay?.points?.some((p) => p.date >= cutoffStr) ?? false;
     patterns.push({
       name: sig.name,
       direction: sig.direction,
       confidence: sig.confidence,
       timeframe: sig.timeframe,
-      overlay: sig.overlay ?? undefined,
+      overlay: overlayIsRecent ? (sig.overlay ?? undefined) : undefined,
     });
     if (patterns.length >= 4) break;
   }
