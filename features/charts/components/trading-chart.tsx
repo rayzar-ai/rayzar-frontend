@@ -108,7 +108,7 @@ function computeVwapBands(bars: OhlcvBar[]) {
   };
 }
 
-function computeSRLevels(bars: OhlcvBar[], swing = 3, maxLevels = 6): number[] {
+function computeSRLevels(bars: OhlcvBar[], swing = 3): number[] {
   if (bars.length < swing * 2 + 1) return [];
   const levels: number[] = [];
   for (let i = swing; i < bars.length - swing; i++) {
@@ -125,7 +125,7 @@ function computeSRLevels(bars: OhlcvBar[], swing = 3, maxLevels = 6): number[] {
     const last = deduped[deduped.length - 1];
     if (last === undefined || Math.abs(level - last) / last > 0.005) deduped.push(level);
   }
-  return deduped.slice(-maxLevels);
+  return deduped;
 }
 
 function computeFibLevels(bars: OhlcvBar[]): { price: number; label: string }[] {
@@ -667,11 +667,13 @@ export function TradingChart({
       }
     }
 
-    // S/R Levels
+    // S/R Levels — max 3 closest resistance + 3 closest support to avoid chart clutter
     const srLevels = (showSR && displayBars.length >= 10) ? computeSRLevels(displayBars) : [];
     if (srLevels.length > 0) {
       const currentPrice = displayBars[displayBars.length - 1].close;
-      for (const level of srLevels) {
+      const resistance = srLevels.filter((l) => l > currentPrice).slice(0, 3);  // lowest 3 above price
+      const support = srLevels.filter((l) => l <= currentPrice).slice(-3);       // highest 3 below price
+      for (const level of [...resistance, ...support]) {
         const isRes = level > currentPrice;
         candleSeries.createPriceLine({ price: level, color: isRes ? "rgba(239,68,68,0.5)" : "rgba(16,185,129,0.5)", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: isRes ? "R" : "S" });
       }
