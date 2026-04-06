@@ -5,7 +5,7 @@
  * Displays full signal metadata for a single ticker on the stock detail page.
  */
 
-import type { Signal } from "@/lib/api-client";
+import type { Signal, FeatureContext } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
@@ -64,6 +64,123 @@ function parseTaSummary(summary: string): { bearish: string[]; bullish: string[]
 function fmt(n: number | null | undefined, decimals = 2): string {
   if (n == null) return "—";
   return n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// ---------------------------------------------------------------------------
+// Specialist breakdown — "Model Intelligence" section
+// ---------------------------------------------------------------------------
+
+interface SpecialistDef {
+  key: string;           // key prefix in FeatureContext
+  label: string;         // display name
+  type: "xgb" | "lstm";
+}
+
+const SPECIALISTS: SpecialistDef[] = [
+  { key: "trend",          label: "Trend",        type: "xgb" },
+  { key: "momentum",       label: "Momentum",     type: "xgb" },
+  { key: "mean_reversion", label: "Mean Rev.",    type: "xgb" },
+  { key: "volume",         label: "Volume",       type: "xgb" },
+  { key: "pattern",        label: "Pattern",      type: "xgb" },
+  { key: "ensemble",       label: "Ensemble",     type: "xgb" },
+  { key: "options",        label: "Options",      type: "xgb" },
+  { key: "sentiment",      label: "Sentiment",    type: "xgb" },
+  { key: "sequence",       label: "LSTM",         type: "lstm" },
+];
+
+function SpecialistBar({ spec, fc }: { spec: SpecialistDef; fc: FeatureContext }) {
+  const longKey  = `${spec.key}_long_prob`  as keyof FeatureContext;
+  const shortKey = `${spec.key}_short_prob` as keyof FeatureContext;
+  const lp = fc[longKey]  as number | null | undefined;
+  const sp = fc[shortKey] as number | null | undefined;
+
+  // If no data yet (options/sentiment sparse), show placeholder
+  if (lp == null && sp == null) {
+    return (
+      <div className="flex items-center gap-2 py-1">
+        <span className="w-20 text-xs text-text-muted shrink-0">{spec.label}</span>
+        <span className={`text-2xs px-1.5 py-0.5 rounded font-mono ${
+          spec.type === "lstm" ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                               : "bg-elevated text-text-muted border border-border"
+        }`}>
+          {spec.type === "lstm" ? "LSTM" : "XGB"}
+        </span>
+        <span className="text-xs text-text-muted italic">no data</span>
+      </div>
+    );
+  }
+
+  const longPct  = Math.round((lp  ?? 0) * 100);
+  const shortPct = Math.round((sp ?? 0) * 100);
+  const net = longPct - shortPct;  // positive = bullish leaning
+
+  // Bar fills: green for net long, red for net short
+  const bullWidth  = Math.min(longPct,  100);
+  const bearWidth  = Math.min(shortPct, 100);
+  const dominant   = net > 5 ? "bullish" : net < -5 ? "bearish" : "neutral";
+
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <span className="w-20 text-xs text-text-secondary shrink-0">{spec.label}</span>
+      <span className={`text-2xs px-1.5 py-0.5 rounded font-mono ${
+        spec.type === "lstm" ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                             : "bg-accent-teal/10 text-accent-teal border border-accent-teal/20"
+      }`}>
+        {spec.type === "lstm" ? "LSTM" : "XGB"}
+      </span>
+      {/* Dual bar: long (green) | short (red) */}
+      <div className="flex-1 relative h-4 flex rounded overflow-hidden bg-elevated">
+        <div
+          className="h-full bg-signal-long/70 rounded-l transition-all"
+          style={{ width: `${bullWidth}%` }}
+          title={`Long: ${longPct}%`}
+        />
+        <div
+          className="h-full bg-signal-short/70 rounded-r transition-all"
+          style={{ width: `${bearWidth}%` }}
+          title={`Short: ${shortPct}%`}
+        />
+      </div>
+      <span className={`text-xs font-mono w-8 text-right ${
+        dominant === "bullish" ? "text-signal-long"
+        : dominant === "bearish" ? "text-signal-short"
+        : "text-text-muted"
+      }`}>
+        {net > 0 ? `+${net}` : `${net}`}
+      </span>
+    </div>
+  );
+}
+
+function SpecialistBreakdown({ fc }: { fc: FeatureContext }) {
+  // Only render section if at least one specialist prob is available
+  const hasAny = SPECIALISTS.some((s) => {
+    const lp = fc[`${s.key}_long_prob` as keyof FeatureContext];
+    return lp != null;
+  });
+  if (!hasAny) return null;
+
+  return (
+    <>
+      <SectionHeader title="Model Intelligence" />
+      <p className="text-xs text-text-muted mb-2">
+        Each specialist votes independently. Bar = long% vs short%. Net score = long − short.
+      </p>
+      <div className="space-y-0.5">
+        {SPECIALISTS.map((s) => (
+          <SpecialistBar key={s.key} spec={s} fc={fc} />
+        ))}
+      </div>
+      <div className="mt-2 flex gap-4 text-2xs text-text-muted">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-4 rounded bg-signal-long/70" /> Long prob
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-4 rounded bg-signal-short/70" /> Short prob
+        </span>
+      </div>
+    </>
+  );
 }
 
 export function SignalDetailCard({ signal }: SignalDetailCardProps) {
@@ -156,6 +273,9 @@ export function SignalDetailCard({ signal }: SignalDetailCardProps) {
           )}
         </>
       )}
+
+      {/* ── Model Intelligence (specialist breakdown) ── */}
+      {fc && <SpecialistBreakdown fc={fc} />}
 
       {/* ── Stop loss + targets ── */}
       {(fc?.stop_loss != null || fc?.target_1 != null) && (

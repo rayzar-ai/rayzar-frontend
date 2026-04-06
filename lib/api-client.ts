@@ -266,6 +266,25 @@ export interface FeatureContext {
   // MVP1 — final meta probs
   final_long_prob?: number | null;
   final_short_prob?: number | null;
+  // Specialist-level probabilities (XGBoost + LSTM) — for Model Intelligence breakdown
+  trend_long_prob?: number | null;
+  trend_short_prob?: number | null;
+  momentum_long_prob?: number | null;
+  momentum_short_prob?: number | null;
+  mean_reversion_long_prob?: number | null;
+  mean_reversion_short_prob?: number | null;
+  volume_long_prob?: number | null;
+  volume_short_prob?: number | null;
+  pattern_long_prob?: number | null;
+  pattern_short_prob?: number | null;
+  ensemble_long_prob?: number | null;
+  ensemble_short_prob?: number | null;
+  sequence_long_prob?: number | null;
+  sequence_short_prob?: number | null;
+  options_long_prob?: number | null;
+  options_short_prob?: number | null;
+  sentiment_long_prob?: number | null;
+  sentiment_short_prob?: number | null;
   // Advanced Tab — volatility + momentum indicators
   atr7?: number | null;
   atr7_pct?: number | null;
@@ -329,6 +348,25 @@ export function parseFeatureContext(featuresUsed: unknown): FeatureContext | nul
     days_to_earnings:        typeof f.days_to_earnings === "number" ? f.days_to_earnings : null,
     final_long_prob:         typeof f.final_long_prob === "number" ? f.final_long_prob : null,
     final_short_prob:        typeof f.final_short_prob === "number" ? f.final_short_prob : null,
+    // Specialist probs
+    trend_long_prob:         typeof f.trend_long_prob === "number" ? f.trend_long_prob : null,
+    trend_short_prob:        typeof f.trend_short_prob === "number" ? f.trend_short_prob : null,
+    momentum_long_prob:      typeof f.momentum_long_prob === "number" ? f.momentum_long_prob : null,
+    momentum_short_prob:     typeof f.momentum_short_prob === "number" ? f.momentum_short_prob : null,
+    mean_reversion_long_prob:  typeof f.mean_reversion_long_prob === "number" ? f.mean_reversion_long_prob : null,
+    mean_reversion_short_prob: typeof f.mean_reversion_short_prob === "number" ? f.mean_reversion_short_prob : null,
+    volume_long_prob:        typeof f.volume_long_prob === "number" ? f.volume_long_prob : null,
+    volume_short_prob:       typeof f.volume_short_prob === "number" ? f.volume_short_prob : null,
+    pattern_long_prob:       typeof f.pattern_long_prob === "number" ? f.pattern_long_prob : null,
+    pattern_short_prob:      typeof f.pattern_short_prob === "number" ? f.pattern_short_prob : null,
+    ensemble_long_prob:      typeof f.ensemble_long_prob === "number" ? f.ensemble_long_prob : null,
+    ensemble_short_prob:     typeof f.ensemble_short_prob === "number" ? f.ensemble_short_prob : null,
+    sequence_long_prob:      typeof f.sequence_long_prob === "number" ? f.sequence_long_prob : null,
+    sequence_short_prob:     typeof f.sequence_short_prob === "number" ? f.sequence_short_prob : null,
+    options_long_prob:       typeof f.options_long_prob === "number" ? f.options_long_prob : null,
+    options_short_prob:      typeof f.options_short_prob === "number" ? f.options_short_prob : null,
+    sentiment_long_prob:     typeof f.sentiment_long_prob === "number" ? f.sentiment_long_prob : null,
+    sentiment_short_prob:    typeof f.sentiment_short_prob === "number" ? f.sentiment_short_prob : null,
     // Advanced Tab
     atr7:                    typeof f.atr7 === "number" ? f.atr7 : null,
     atr7_pct:                typeof f.atr7_pct === "number" ? f.atr7_pct : null,
@@ -438,6 +476,26 @@ export interface QuoteData {
   post_market_change_pct: number | null;
   session: "pre" | "regular" | "post" | "closed";
   market_state: string;
+}
+
+export interface MultiHorizonSignal {
+  id: string;
+  ticker: string;
+  signal_date: string;        // "YYYY-MM-DD"
+  regime: string | null;
+  signal: string;             // STRONG_LONG | LONG | NEUTRAL | SHORT | STRONG_SHORT
+  combined_long_prob: number | null;
+  combined_short_prob: number | null;
+  long_1d: number | null;
+  long_5d: number | null;
+  long_20d: number | null;
+  short_1d: number | null;
+  short_5d: number | null;
+  short_20d: number | null;
+  rank_1d: number | null;
+  rank_5d: number | null;
+  rank_20d: number | null;
+  high_conviction: boolean | null;
 }
 
 export interface EarningsQuarter {
@@ -794,6 +852,26 @@ class RayZarApiClient {
 
   async getScannerStatus(): Promise<ApiResponse<ScannerStatus>> {
     return this.get<ScannerStatus>("/api/v1/scanner/status");
+  }
+
+  async getMultiHorizon(params?: {
+    high_conviction?: boolean;
+    signal?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<ApiResponse<{ signals: MultiHorizonSignal[]; total: number; page: number; page_size: number }>> {
+    return this.get("/api/v1/multi-horizon", {
+      high_conviction: params?.high_conviction ? "true" : undefined,
+      signal: params?.signal,
+      page: params?.page,
+      page_size: params?.page_size,
+    });
+  }
+
+  async getMultiHorizonByTicker(ticker: string): Promise<ApiResponse<MultiHorizonSignal | null>> {
+    return this.get<MultiHorizonSignal | null>(
+      `/api/v1/multi-horizon/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
   }
 
   async getIdeas(params?: {

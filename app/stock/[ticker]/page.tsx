@@ -421,6 +421,74 @@ export default async function StockPage({ params }: StockPageProps) {
         </div>
       )}
 
+      {/* Model Intelligence — specialist breakdown */}
+      {features && (() => {
+        const specialists = [
+          { key: "trend",          label: "Trend",      type: "XGB" },
+          { key: "momentum",       label: "Momentum",   type: "XGB" },
+          { key: "mean_reversion", label: "Mean Rev.",  type: "XGB" },
+          { key: "volume",         label: "Volume",     type: "XGB" },
+          { key: "pattern",        label: "Pattern",    type: "XGB" },
+          { key: "ensemble",       label: "Ensemble",   type: "XGB" },
+          { key: "options",        label: "Options",    type: "XGB" },
+          { key: "sentiment",      label: "Sentiment",  type: "XGB" },
+          { key: "sequence",       label: "LSTM",       type: "LSTM" },
+        ];
+        type FC = typeof features;
+        const hasAny = specialists.some((s) => {
+          const k = `${s.key}_long_prob` as keyof FC;
+          return features[k] != null;
+        });
+        if (!hasAny) return null;
+        return (
+          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Model Intelligence</h3>
+              <span className="text-2xs text-text-muted">long % · short %</span>
+            </div>
+            <div className="space-y-1">
+              {specialists.map((s) => {
+                const lpKey = `${s.key}_long_prob` as keyof FC;
+                const spKey = `${s.key}_short_prob` as keyof FC;
+                const lp = features[lpKey] as number | null | undefined;
+                const sp = features[spKey] as number | null | undefined;
+                const lpPct = lp != null ? Math.round(lp * 100) : null;
+                const spPct = sp != null ? Math.round(sp * 100) : null;
+                const net = lpPct != null && spPct != null ? lpPct - spPct : null;
+                const typeColor = s.type === "LSTM" ? "#a78bfa" : "#2dd4bf";
+                const typeBg = s.type === "LSTM" ? "#a78bfa18" : "#2dd4bf18";
+                return (
+                  <div key={s.key} className="flex items-center gap-2">
+                    <span className="w-[4.5rem] shrink-0 text-2xs text-text-secondary">{s.label}</span>
+                    <span
+                      className="shrink-0 rounded px-1 py-0.5 font-mono text-2xs font-semibold border"
+                      style={{ color: typeColor, background: typeBg, borderColor: `${typeColor}40` }}
+                    >{s.type}</span>
+                    {lpPct == null ? (
+                      <span className="text-2xs text-text-muted italic">no data</span>
+                    ) : (
+                      <>
+                        <div className="flex flex-1 overflow-hidden rounded h-3 bg-elevated">
+                          <div className="h-full bg-green-500/60 transition-all" style={{ width: `${lpPct}%` }} />
+                          <div className="h-full bg-red-500/60 transition-all" style={{ width: `${spPct ?? 0}%` }} />
+                        </div>
+                        <span
+                          className="w-7 shrink-0 text-right font-mono text-2xs font-semibold"
+                          style={{ color: net != null && net > 5 ? "#10b981" : net != null && net < -5 ? "#ef4444" : "#6b7280" }}
+                        >
+                          {net != null ? (net > 0 ? `+${net}` : `${net}`) : "—"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-2xs text-text-muted pt-1">Net = long% − short%. Green bar = bullish vote, red = bearish.</p>
+          </div>
+        );
+      })()}
+
       {/* Risk Management — ATR stops + position sizing */}
       {(features?.stop_loss !== null && features?.stop_loss !== undefined ||
         features?.target_1 !== null && features?.target_1 !== undefined ||
