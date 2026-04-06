@@ -46,10 +46,6 @@ export function LivePrice({
   const displayChangePct: number | null = changePct  ?? initialChangePct  ?? null;
 
   const isPositive = displayChange !== null ? displayChange >= 0 : null;
-  const priceColor =
-    isPositive === null ? "text-text-primary"
-    : isPositive        ? "text-signal-long"
-    : "text-signal-short";
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

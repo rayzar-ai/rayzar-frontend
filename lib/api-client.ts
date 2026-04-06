@@ -489,13 +489,12 @@ export interface MultiHorizonSignal {
   long_1d: number | null;
   long_5d: number | null;
   long_20d: number | null;
-  short_1d: number | null;
-  short_5d: number | null;
-  short_20d: number | null;
   rank_1d: number | null;
   rank_5d: number | null;
   rank_20d: number | null;
-  high_conviction: boolean | null;
+  high_conviction: number;    // 0 or 1 (integer from DB)
+  conviction_dir: string | null;   // "long" | "short" | null
+  weights_used: string | null;
 }
 
 export interface EarningsQuarter {

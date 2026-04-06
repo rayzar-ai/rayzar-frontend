@@ -12,7 +12,7 @@
  */
 
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { parseFeatureContext } from "@/lib/api-client";
@@ -25,7 +25,6 @@ import { LivePrice } from "@/components/ui/live-price";
 import { HealthScoreBar } from "@/components/ui/health-score-bar";
 import { TASignalsPanel } from "@/components/ui/ta-signals-panel";
 import { AnalystPanel } from "@/components/ui/analyst-panel";
-import { PatternBadge } from "@/components/ui/pattern-badge";
 import { PatternBadgesClient } from "@/components/ui/pattern-badges-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
@@ -282,7 +281,6 @@ export default async function StockPage({ params }: StockPageProps) {
   const prevPrice = bars.length > 1 ? bars[bars.length - 2].close : null;
   const priceChange = currentPrice && prevPrice ? currentPrice - prevPrice : null;
   const priceChangePct = currentPrice && prevPrice ? ((currentPrice - prevPrice) / prevPrice) * 100 : null;
-  const isPositive = priceChange !== null ? priceChange >= 0 : null;
 
   // Pattern badges row
   const patternBadges = buildPatternBadges(taSignals, features);

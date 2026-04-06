@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin/health", label: "Health" },
