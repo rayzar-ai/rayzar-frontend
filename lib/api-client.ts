@@ -285,6 +285,17 @@ export interface FeatureContext {
   options_short_prob?: number | null;
   sentiment_long_prob?: number | null;
   sentiment_short_prob?: number | null;
+  // FA-002 — setup tag (GAP-024)
+  setup_tag?: string | null;
+  // FA-005 — specialist agreement count
+  specialist_agreement?: number | null;
+  // 12-specialist probs (new specialists)
+  vpa_long_prob?: number | null;
+  vpa_short_prob?: number | null;
+  mamba_long_prob?: number | null;
+  mamba_short_prob?: number | null;
+  reversal_long_prob?: number | null;
+  reversal_short_prob?: number | null;
   // Advanced Tab — volatility + momentum indicators
   atr7?: number | null;
   atr7_pct?: number | null;
