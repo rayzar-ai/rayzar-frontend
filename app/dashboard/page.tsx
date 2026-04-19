@@ -10,7 +10,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
-import type { Signal, MarketRegime } from "@/lib/api-client";
+import type { Signal, MarketRegime, ModelHealthData } from "@/lib/api-client";
 import { MarketTicker } from "@/components/layout/market-ticker";
 import { SearchBar } from "@/components/ui/search-bar";
 import { ModelSelector } from "@/features/signals/components/model-selector";
@@ -66,6 +66,37 @@ function RegimePill({ regime }: { regime: MarketRegime | null }) {
   );
 }
 
+function ModelHealthBanner({ health }: { health: ModelHealthData | null }) {
+  if (!health) return null;
+  const flag = health.health_flag;
+  const wr30 = health.rolling_30d_win_rate != null ? (health.rolling_30d_win_rate * 100).toFixed(1) : "?";
+  const slWr = health.strong_long_win_rate != null ? (health.strong_long_win_rate * 100).toFixed(1) : "?";
+
+  if (flag === "GREEN") return null; // don't show banner when healthy
+
+  const isRed = flag === "RED";
+  const bgClass = isRed
+    ? "bg-signal-short/8 border-signal-short/30"
+    : "bg-amber-500/8 border-amber-500/30";
+  const textClass = isRed ? "text-signal-short" : "text-amber-500";
+  const dotClass = isRed ? "bg-signal-short" : "bg-amber-500";
+
+  return (
+    <div className={`border-b ${bgClass} px-4 py-2.5 sm:px-6`}>
+      <div className="mx-auto flex max-w-screen-2xl items-center gap-3">
+        <span className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} />
+        <p className={`text-xs font-medium ${textClass}`}>
+          Model Health: <span className="font-bold">{flag}</span>
+          {" — "}Rolling 30d win rate: {wr30}% · STRONG LONG all-time: {slWr}%
+          {health.health_reasons?.[0] && (
+            <span className="text-text-muted ml-1">({health.health_reasons[0]})</span>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SignalCountBadges({ signals }: { signals: Signal[] }) {
   const bullish = signals.filter((s) =>
     s.signal_class === "STRONG_LONG" || s.signal_class === "LONG"
@@ -96,12 +127,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const signalClass = params.signal_class ?? "";
 
   // Fetch data in parallel
-  const [signalsResult, regimeResult, topSignalsResult, watchlistResult, earningsResult] = await Promise.allSettled([
+  const [signalsResult, regimeResult, topSignalsResult, watchlistResult, earningsResult, healthResult] = await Promise.allSettled([
     apiClient.getSignals({ page, page_size: 200, signal_class: signalClass || undefined }),
     apiClient.getMarketRegime(),
     apiClient.getTopSignals(20),
     apiClient.getWatchlist(),
     apiClient.getUpcomingEarnings(30),
+    apiClient.getModelHealth(),
   ]);
 
   const signalsData =
@@ -133,10 +165,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       ? (earningsResult.value.data ?? [])
       : [];
 
+  const modelHealth: ModelHealthData | null =
+    healthResult.status === "fulfilled" &&
+    healthResult.value.success &&
+    healthResult.value.data
+      ? healthResult.value.data
+      : null;
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* ── Market Ticker Strip ─────────────────────────────────────────── */}
       <MarketTicker signals={topSignals} />
+
+      {/* ── Model Health Banner (RED/YELLOW only) ──────────────────────── */}
+      <ModelHealthBanner health={modelHealth} />
 
       {/* ── Page Header ────────────────────────────────────────────────── */}
       <div className="border-b border-border bg-panel px-4 py-3 sm:px-6">

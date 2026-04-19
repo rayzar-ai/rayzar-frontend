@@ -497,6 +497,20 @@ export interface MultiHorizonSignal {
   weights_used: string | null;
 }
 
+/** FA-008: Model health snapshot from track_model_health.py */
+export interface ModelHealthData {
+  snapshot_date:         string;    // "YYYY-MM-DD"
+  health_flag:           string;    // "RED" | "YELLOW" | "GREEN"
+  rolling_30d_win_rate:  number | null;
+  strong_long_win_rate:  number | null;
+  long_win_rate:         number | null;
+  n_signals_total:       number | null;
+  n_signals_30d:         number | null;
+  health_reasons:        string[];
+  by_signal:             Record<string, { n: number; win_rate: number; avg_fwd_ret_5d: number }>;
+  by_month:              Record<string, { n: number; win_rate: number }>;
+}
+
 /** GAP-001: 4-horizon swing model output per ticker (signals_multi_horizon table) */
 export interface SwingHorizonSignal {
   ticker:      string;
@@ -885,6 +899,11 @@ class RayZarApiClient {
     return this.get<MultiHorizonSignal | null>(
       `/api/v1/multi-horizon/${encodeURIComponent(ticker.toUpperCase())}`,
     );
+  }
+
+  /** FA-008: fetch latest model health snapshot */
+  async getModelHealth(): Promise<ApiResponse<ModelHealthData | null>> {
+    return this.get<ModelHealthData | null>("/api/v1/model-health");
   }
 
   /** GAP-001: fetch 4-horizon swing signal (5d/15d/30d/60d) for one ticker */

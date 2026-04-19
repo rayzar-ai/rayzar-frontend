@@ -311,12 +311,32 @@ export function SignalDetailCard({ signal }: SignalDetailCardProps) {
         </div>
       )}
 
+      {/* ── Setup tag (FA-002) ── */}
+      {fc?.setup_tag && fc.setup_tag !== "NONE" && (
+        <div className="mb-3 flex items-center gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2">
+          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Setup</span>
+          <span className="text-sm text-blue-300 font-medium">
+            {fc.setup_tag.replace(/_/g, " ")}
+          </span>
+        </div>
+      )}
+
       {/* ── Core metrics ── */}
       <div className="mt-2 space-y-0">
         <MetricRow label="Signal date" value={formatDate(signal.signal_date)} />
         <MetricRow label="Confidence"  value={formatConfidence(signal.confidence)} />
         <MetricRow label="Conviction"  value={formatConfidence(signal.conviction_score)} />
         <MetricRow label="Consensus"   value={formatConfidence(signal.consensus_score)} />
+        {fc?.specialist_agreement != null && (
+          <MetricRow
+            label="Specialist agreement"
+            value={
+              <span className={`font-mono ${(fc.specialist_agreement as number) >= 7 ? "text-signal-long" : (fc.specialist_agreement as number) >= 5 ? "text-text-primary" : "text-signal-short"}`}>
+                {fc.specialist_agreement}/12 agree
+              </span>
+            }
+          />
+        )}
         <MetricRow label="Regime"      value={<span className="capitalize">{signal.regime.replace(/_/g, " ")}</span>} />
         <MetricRow label="Model"       value={signal.model_id} />
         {fc?.final_long_prob  != null && <MetricRow label="Long prob"  value={`${(fc.final_long_prob  * 100).toFixed(1)}%`} />}
