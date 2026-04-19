@@ -26,6 +26,8 @@ interface Features {
   sector_regime_label?: string;
   ta_direction?: string;
   earnings_proximity_flag?: number;
+  setup_tag?: string;
+  specialist_agreement?: number;
 }
 
 function getFeatures(sig: Signal): Features {
@@ -412,6 +414,8 @@ function PriorityTable({ signals }: { signals: Signal[] }) {
             <th className="px-3 py-3 font-medium">Health</th>
             <th className="px-3 py-3 font-medium" title="TA/ML Alignment">Align</th>
             <th className="px-3 py-3 font-medium">R/R</th>
+            <th className="px-3 py-3 font-medium" title="Specialist Agreement">Agree</th>
+            <th className="px-3 py-3 font-medium">Setup</th>
             <th className="px-3 py-3 font-medium">RSI</th>
             <th className="px-3 py-3 font-medium">MACD</th>
             <th className="px-3 py-3 font-medium">Volume</th>
@@ -472,6 +476,22 @@ function PriorityTable({ signals }: { signals: Signal[] }) {
 
                 <td className="px-3 py-3">
                   <RRCell f={f} />
+                </td>
+
+                <td className="px-3 py-3">
+                  {f.specialist_agreement != null ? (
+                    <span className={`font-mono text-xs font-semibold ${f.specialist_agreement >= 7 ? "text-teal-400" : f.specialist_agreement >= 5 ? "text-text-secondary" : "text-red-400"}`}>
+                      {f.specialist_agreement}/12
+                    </span>
+                  ) : <span className="text-xs text-text-muted">—</span>}
+                </td>
+
+                <td className="px-3 py-3">
+                  {f.setup_tag && f.setup_tag !== "NONE" ? (
+                    <span className="rounded bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-400 whitespace-nowrap">
+                      {f.setup_tag.replace(/_/g, " ")}
+                    </span>
+                  ) : <span className="text-xs text-text-muted">—</span>}
                 </td>
 
                 <td className="px-3 py-3">
