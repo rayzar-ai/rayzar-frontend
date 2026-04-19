@@ -497,6 +497,20 @@ export interface MultiHorizonSignal {
   weights_used: string | null;
 }
 
+/** GAP-001: 4-horizon swing model output per ticker (signals_multi_horizon table) */
+export interface SwingHorizonSignal {
+  ticker:      string;
+  signal_date: string;          // "YYYY-MM-DD"
+  signal_5d:   string | null;   // STRONG LONG | LONG | NEUTRAL | SHORT | STRONG SHORT
+  prob_5d:     number | null;   // 0.0 – 1.0
+  signal_15d:  string | null;
+  prob_15d:    number | null;
+  signal_30d:  string | null;
+  prob_30d:    number | null;
+  signal_60d:  string | null;
+  prob_60d:    number | null;
+}
+
 export interface EarningsQuarter {
   ticker: string;
   report_date: string;          // "YYYY-MM-DD"
@@ -870,6 +884,13 @@ class RayZarApiClient {
   async getMultiHorizonByTicker(ticker: string): Promise<ApiResponse<MultiHorizonSignal | null>> {
     return this.get<MultiHorizonSignal | null>(
       `/api/v1/multi-horizon/${encodeURIComponent(ticker.toUpperCase())}`,
+    );
+  }
+
+  /** GAP-001: fetch 4-horizon swing signal (5d/15d/30d/60d) for one ticker */
+  async getSwingHorizons(ticker: string): Promise<ApiResponse<SwingHorizonSignal | null>> {
+    return this.get<SwingHorizonSignal | null>(
+      `/api/v1/swing-horizons/${encodeURIComponent(ticker.toUpperCase())}`,
     );
   }
 

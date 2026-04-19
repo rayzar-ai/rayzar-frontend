@@ -5,8 +5,9 @@
  * Displays full signal metadata for a single ticker on the stock detail page.
  */
 
-import type { Signal, FeatureContext } from "@/lib/api-client";
-import { parseFeatureContext } from "@/lib/api-client";
+import { useEffect, useState } from "react";
+import type { Signal, FeatureContext, SwingHorizonSignal } from "@/lib/api-client";
+import { parseFeatureContext, apiClient } from "@/lib/api-client";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { RayzarScore } from "@/components/ui/rayzar-score";
 import { formatConfidence, formatDate } from "@/lib/utils";
@@ -183,6 +184,89 @@ function SpecialistBreakdown({ fc }: { fc: FeatureContext }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// GAP-001 — Swing Horizons (5d / 15d / 30d / 60d)
+// ---------------------------------------------------------------------------
+
+const HORIZON_ROWS: { key: keyof SwingHorizonSignal; probKey: keyof SwingHorizonSignal; label: string }[] = [
+  { key: "signal_5d",  probKey: "prob_5d",  label: "5 days"  },
+  { key: "signal_15d", probKey: "prob_15d", label: "15 days" },
+  { key: "signal_30d", probKey: "prob_30d", label: "30 days" },
+  { key: "signal_60d", probKey: "prob_60d", label: "60 days" },
+];
+
+function horizonBadgeClass(sig: string | null): string {
+  switch (sig) {
+    case "STRONG LONG":  return "bg-signal-long/20 text-signal-long border-signal-long/40";
+    case "LONG":         return "bg-signal-long/10 text-signal-long/80 border-signal-long/25";
+    case "STRONG SHORT": return "bg-signal-short/20 text-signal-short border-signal-short/40";
+    case "SHORT":        return "bg-signal-short/10 text-signal-short/80 border-signal-short/25";
+    default:             return "bg-elevated text-text-muted border-border";
+  }
+}
+
+function SwingHorizons({ ticker }: { ticker: string }) {
+  const [data, setData] = useState<SwingHorizonSignal | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.getSwingHorizons(ticker).then((res) => {
+      if (res.success && res.data) setData(res.data);
+    }).catch(() => {/* not yet populated — silent */}).finally(() => setLoading(false));
+  }, [ticker]);
+
+  if (loading) return null;
+  if (!data) return null;
+
+  return (
+    <>
+      <SectionHeader title="Swing Horizons" />
+      <p className="text-xs text-text-muted mb-2">
+        Independent ML signal per holding period. Divergence between horizons is the insight.
+      </p>
+      <div className="rounded-md border border-border overflow-hidden">
+        {HORIZON_ROWS.map(({ key, probKey, label }) => {
+          const sig  = data[key]  as string | null;
+          const prob = data[probKey] as number | null;
+          const pct  = prob != null ? Math.round(prob * 100) : null;
+          return (
+            <div
+              key={key}
+              className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0"
+            >
+              <span className="w-16 text-sm text-text-secondary shrink-0">{label}</span>
+              <span
+                className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium w-28 justify-center ${horizonBadgeClass(sig)}`}
+              >
+                {sig ?? "—"}
+              </span>
+              {pct != null ? (
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-full bg-elevated overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        sig === "STRONG LONG" || sig === "LONG"
+                          ? "bg-signal-long"
+                          : sig === "STRONG SHORT" || sig === "SHORT"
+                          ? "bg-signal-short"
+                          : "bg-text-muted"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono text-text-secondary w-8 text-right">{pct}%</span>
+                </div>
+              ) : (
+                <span className="text-xs text-text-muted italic">—</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export function SignalDetailCard({ signal }: SignalDetailCardProps) {
   const fc = parseFeatureContext(signal.features_used);
   const taParsed = fc?.ta_summary ? parseTaSummary(fc.ta_summary) : null;
@@ -276,6 +360,9 @@ export function SignalDetailCard({ signal }: SignalDetailCardProps) {
 
       {/* ── Model Intelligence (specialist breakdown) ── */}
       {fc && <SpecialistBreakdown fc={fc} />}
+
+      {/* ── Swing Horizons (GAP-001) ── */}
+      <SwingHorizons ticker={signal.ticker} />
 
       {/* ── Stop loss + targets ── */}
       {(fc?.stop_loss != null || fc?.target_1 != null) && (
